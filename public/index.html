@@ -772,12 +772,17 @@ const FOTOS = {
   medio: [
     { archivo: 'Quien_es_Medio_-_Fran.jpeg', nombre: 'Fran' },
     { archivo: 'Quien_es_Medio_-_Sofia.jpeg', nombre: 'Sofia' },
-    { archivo: 'Quien_es_Medio_-_Vari.jpeg', nombre: 'Vari' },
+    { archivo: 'Quien_es_Medio_-_Maria.jpeg', nombre: 'Maria' },
   ],
   dificil: [
-    { archivo: 'Quien_es_Dificil_-_Claudio.jpeg', nombre: 'Claudio' },
     { archivo: 'Quien_es_Dificil_-_Ibra.jpeg', nombre: 'Ibra' },
     { archivo: 'Quien_es_Dificil_-_Wili.jpeg', nombre: 'Wili' },
+    { archivo: 'Quien_es_Dificil_-_Vari.jpeg', nombre: 'Vari' },
+  ],
+  muydificil: [
+    { archivo: 'Quien_es_Muy_Dificil_-_Claudio.jpeg', nombre: 'Claudio' },
+    { archivo: 'Quien_es_Muy_Dificil_-_Lucia.jpeg', nombre: 'Lucia' },
+    { archivo: 'Quien_es_Muy_Dificil_-_Roberto.jpeg', nombre: 'Roberto' },
   ],
 };
 
@@ -1154,16 +1159,11 @@ function seleccionarPreguntas(id) {
       preguntas.push({ ...pool[idx], nivel, tipo: 'cancion' });
     });
   } else if (id === 'fotos') {
-    // fotos solo tiene 3 niveles
-    ['facil','medio','dificil'].forEach(nivel => {
+    nivelesOrden.forEach(nivel => {
       const pool = FOTOS[nivel];
       const idx = Math.floor(Math.random() * pool.length);
       preguntas.push({ ...pool[idx], nivel, tipo: 'foto' });
     });
-    // añadir una dificil extra
-    const pool2 = FOTOS['dificil'];
-    const extra = Math.floor(Math.random() * pool2.length);
-    preguntas.push({ ...pool2[extra], nivel: 'muydificil', tipo: 'foto' });
   } else if (id === 'frases') {
     nivelesOrden.forEach(nivel => {
       const pool = FRASES[nivel];
