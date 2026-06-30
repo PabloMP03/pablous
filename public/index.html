@@ -34,6 +34,7 @@
       font-family: 'Inter', sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
+      touch-action: manipulation; /* evita el zoom por doble-tap en todo el juego */
     }
 
     /* ── PANTALLAS ── */
@@ -497,6 +498,7 @@
       justify-content: center;
       padding: 0 6px;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
     .key:active { transform: scale(0.92); }
     .key.wide { min-width: 46px; font-size: 11px; }
@@ -697,7 +699,7 @@
     />
     <div class="admin-pass-actions">
       <button class="btn btn-secondary" onclick="cancelarAdminPass()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarAdminPass()">Entrar</button>
+      <button class="btn btn-primary" id="admin-pass-btn" onclick="confirmarAdminPass()">Entrar</button>
     </div>
   </div>
 </div>
@@ -1194,14 +1196,42 @@ async function completarEntrada(nombre) {
     initRealtime();
 }
 
-const ADMIN_PASSWORD = "CacahuetesSanta2307";
 let pendingAdminEntry = false;
 
-function confirmarAdminPass() {
+// La contraseña se verifica en Supabase (función check_admin_password),
+// nunca se compara ni se guarda en texto plano aquí en el cliente.
+async function checkAdminPasswordRemote(pwd) {
+  return await sbFetch('rpc/check_admin_password', {
+    method: 'POST',
+    body: JSON.stringify({ pwd })
+  });
+}
+
+async function confirmarAdminPass() {
     const input = document.getElementById('admin-pass-input');
+    const btn = document.getElementById('admin-pass-btn');
     const valor = input.value;
 
-    if (valor === ADMIN_PASSWORD) {
+    if (!valor) { showToast('Escribe la contraseña'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Comprobando...';
+
+    let esCorrecta = false;
+    try {
+        esCorrecta = await checkAdminPasswordRemote(valor);
+    } catch (err) {
+        console.error('Error verificando contraseña:', err);
+        showToast('⚠️ Error de conexión, inténtalo de nuevo');
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+        return;
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+
+    if (esCorrecta === true) {
         pendingAdminEntry = false;
         completarEntrada(ADMIN);
     } else {
