@@ -876,11 +876,8 @@ async function registerDevice(playerName) {
 }
 
 async function upsertScore(playerName, minijuego, puntuacion) {
-  // on_conflict + merge-duplicates: si ya existe esa puntuación, la ACTUALIZA
-  // en vez de dar error de duplicado
-  return await sbFetch("scores?on_conflict=player_name,minijuego", {
+  return await sbFetch("scores", {
     method: "POST",
-    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify({
       player_name: playerName,
       minijuego,
