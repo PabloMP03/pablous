@@ -75,6 +75,40 @@
     }
 
     .input-wrap { width: 100%; max-width: 320px; }
+
+    /* ── ADMIN PASSWORD ── */
+    #screen-admin-pass {
+      background: radial-gradient(ellipse at top, #1a0a2e 0%, var(--bg) 60%);
+    }
+    .admin-pass-card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      width: 100%;
+      max-width: 320px;
+    }
+    .admin-pass-emoji { font-size: 40px; margin-bottom: 8px; }
+    .admin-pass-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 1px; }
+    .admin-pass-desc { font-size: 13px; color: var(--muted); margin: 8px 0 20px; line-height: 1.5; }
+    .admin-pass-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 16px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      text-align: center;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+    .admin-pass-input:focus { border-color: var(--accent); }
+    .admin-pass-actions { display: flex; gap: 10px; }
+    .admin-pass-actions .btn { max-width: none; flex: 1; padding: 12px; font-size: 14px; }
     .input-label { font-size: 12px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; display: block; }
 
     select, input[type="text"] {
@@ -647,6 +681,27 @@
   </div>
 </div>
 
+<!-- ══════════════ PANTALLA CONTRASEÑA ADMIN ══════════════ -->
+<div id="screen-admin-pass" class="screen">
+  <div class="admin-pass-card pop" id="admin-pass-card">
+    <div class="admin-pass-emoji">🔐</div>
+    <div class="admin-pass-title">Acceso Admin</div>
+    <div class="admin-pass-desc">Este perfil está protegido. Introduce la contraseña para continuar.</div>
+    <input
+      type="password"
+      id="admin-pass-input"
+      class="admin-pass-input"
+      placeholder="Contraseña"
+      autocomplete="off"
+      onkeydown="if(event.key==='Enter') confirmarAdminPass()"
+    />
+    <div class="admin-pass-actions">
+      <button class="btn btn-secondary" onclick="cancelarAdminPass()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarAdminPass()">Entrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ PANTALLA LOBBY ══════════════ -->
 <div id="screen-lobby" class="screen">
   <div class="lobby-header">
@@ -870,6 +925,14 @@ async function getDevice() {
     return res && res.length ? res[0] : null;
 }
 
+// Comprueba si un nombre de jugador ya está registrado en OTRO dispositivo
+async function getDeviceByPlayer(playerName) {
+    const res = await sbFetch(
+        `devices?player_name=eq.${encodeURIComponent(playerName)}&select=*`
+    );
+    return res && res.length ? res[0] : null;
+}
+
 async function registerDevice(playerName) {
     return await sbFetch("devices", {
         method: "POST",
@@ -1083,16 +1146,35 @@ async function entrar() {
         return;
     }
 
-    // Admin y perfiles de prueba entran sin bloqueo de dispositivo
+    // Perfil de Pablo: pedir contraseña antes de nada
+    if (nombre === ADMIN) {
+        pendingAdminEntry = true;
+        showScreen('admin-pass');
+        const input = document.getElementById('admin-pass-input');
+        input.value = '';
+        setTimeout(() => input.focus(), 100);
+        return;
+    }
+
+    // Perfiles de prueba (testers) entran sin bloqueo de dispositivo
     if (!esPrueba(nombre)) {
         try {
-            const dispositivo = await getDevice();
-            if (dispositivo) {
-                if (dispositivo.player_name !== nombre) {
-                    showToast(`⚠️ Este dispositivo ya pertenece a ${dispositivo.player_name}`);
+            const miDispositivo = await getDevice();
+
+            if (miDispositivo) {
+                // Este dispositivo ya tiene un perfil asignado
+                if (miDispositivo.player_name !== nombre) {
+                    showToast(`⚠️ Este dispositivo ya pertenece a ${miDispositivo.player_name}`);
                     return;
                 }
             } else {
+                // Este dispositivo aún no tiene perfil: comprobar que el nombre
+                // elegido no esté ya cogido por OTRO dispositivo
+                const dueño = await getDeviceByPlayer(nombre);
+                if (dueño && dueño.device_id !== deviceId) {
+                    showToast(`⚠️ ${nombre} ya está jugando desde otro dispositivo`);
+                    return;
+                }
                 await registerDevice(nombre);
             }
         } catch (err) {
@@ -1101,15 +1183,42 @@ async function entrar() {
         }
     }
 
+    await completarEntrada(nombre);
+}
+
+async function completarEntrada(nombre) {
     jugadorActual = nombre;
-
     document.getElementById("lobby-nombre").textContent = nombre;
-
     showScreen("lobby");
-
     await actualizarRanking();
-
     initRealtime();
+}
+
+const ADMIN_PASSWORD = "CacahuetesSanta2307";
+let pendingAdminEntry = false;
+
+function confirmarAdminPass() {
+    const input = document.getElementById('admin-pass-input');
+    const valor = input.value;
+
+    if (valor === ADMIN_PASSWORD) {
+        pendingAdminEntry = false;
+        completarEntrada(ADMIN);
+    } else {
+        const card = document.getElementById('admin-pass-card');
+        card.classList.remove('shake');
+        void card.offsetWidth; // reiniciar animación
+        card.classList.add('shake');
+        showToast('❌ Contraseña incorrecta');
+        input.value = '';
+        input.focus();
+    }
+}
+
+function cancelarAdminPass() {
+    pendingAdminEntry = false;
+    document.getElementById('admin-pass-input').value = '';
+    showScreen('inicio');
 }
 
 function volverLobby() {
