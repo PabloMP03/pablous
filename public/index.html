@@ -192,6 +192,7 @@
     .minijuego-score { font-size: 18px; font-weight: 900; color: var(--success); margin-top: 4px; }
     .lock-icon { font-size: 20px; position: absolute; top: 8px; right: 8px; }
     .unlock-date { font-size: 10px; color: var(--muted); margin-top: 4px; }
+    .countdown { font-size: 12px; font-weight: 700; color: var(--accent3); margin-top: 4px; font-variant-numeric: tabular-nums; }
 
     /* ── RANKING ── */
     .ranking-section { width: 100%; max-width: 420px; }
@@ -700,10 +701,10 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 // Zona horaria España (Europe/Madrid)
 const UNLOCK_DATES = {
-  canciones: new Date('2025-07-04T00:00:00+02:00'),
-  fotos:     new Date('2025-07-11T00:00:00+02:00'),
-  frases:    new Date('2025-07-11T00:00:00+02:00'),
-  trivia:    new Date('2025-07-18T00:00:00+02:00'),
+  canciones: new Date('2026-07-04T00:00:00+02:00'),
+  fotos:     new Date('2026-07-11T00:00:00+02:00'),
+  frases:    new Date('2026-07-11T00:00:00+02:00'),
+  trivia:    new Date('2026-07-18T00:00:00+02:00'),
 };
 
 const MINIJUEGOS_CONFIG = [
@@ -812,6 +813,17 @@ const PUNTOS = { facil: 250, medio: 500, dificil: 750, muydificil: 1000 };
 // STATE
 // ══════════════════════════════════════════════
 let jugadorActual = '';
+const ADMIN = "Pablo";
+// Perfiles de PRUEBA: juegos desbloqueados aunque no sea la fecha + repetición libre.
+// ⚠️ Antes de la fiesta déjalo vacío:  const TESTERS = [];
+const TESTERS = ["Andres"];
+function esPrueba(nombre) { return nombre === ADMIN || TESTERS.includes(nombre); }
+let deviceId = localStorage.getItem("deviceId");
+
+if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    localStorage.setItem("deviceId", deviceId);
+}
 let misScores = {};
 let rankingData = [];
 let realtimeChannel = null;
@@ -846,9 +858,29 @@ async function getScores() {
   return await sbFetch('scores?select=*&order=completado_at.desc') || [];
 }
 
+async function getDevice() {
+    const res = await sbFetch(
+        `devices?device_id=eq.${encodeURIComponent(deviceId)}&select=*`
+    );
+    return res && res.length ? res[0] : null;
+}
+
+async function registerDevice(playerName) {
+    return await sbFetch("devices", {
+        method: "POST",
+        body: JSON.stringify({
+            device_id: deviceId,
+            player_name: playerName
+        })
+    });
+}
+
 async function upsertScore(playerName, minijuego, puntuacion) {
-  return await sbFetch("scores", {
+  // on_conflict + merge-duplicates: si ya existe esa puntuación, la ACTUALIZA
+  // en vez de dar error de duplicado
+  return await sbFetch("scores?on_conflict=player_name,minijuego", {
     method: "POST",
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify({
       player_name: playerName,
       minijuego,
@@ -874,39 +906,41 @@ function initRealtime() {
 // RANKING
 // ══════════════════════════════════════════════
 async function actualizarRanking() {
-  let scores;
   try {
-    scores = await getScores();
+    const scores = await getScores();
+
+    // Agrupar por jugador: total + desglose por minijuego (Pablo excluido = admin)
+    const porJugador = {};
+    scores.forEach(s => {
+      if (s.player_name === ADMIN) return;
+      if (!porJugador[s.player_name]) porJugador[s.player_name] = { total: 0, scores: {} };
+      porJugador[s.player_name].scores[s.minijuego] = s.puntuacion;
+      porJugador[s.player_name].total += s.puntuacion;
+    });
+
+    // Si soy yo (no admin), refrescar misScores para el grid
+    if (jugadorActual && jugadorActual !== ADMIN && porJugador[jugadorActual]) {
+      misScores = porJugador[jugadorActual].scores;
+    }
+
+    // Array ordenado por puntuación total (mayor a menor)
+    rankingData = Object.entries(porJugador)
+      .map(([nombre, d]) => ({ nombre, total: d.total, scores: d.scores, jugados: Object.keys(d.scores).length }))
+      .sort((a, b) => b.total - a.total);
+
+    renderRanking();
   } catch (err) {
     console.error('Error cargando ranking:', err);
     const list = document.getElementById('ranking-list');
     if (list && !rankingData.length) {
-      list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">No se pudo cargar el ranking.<br>Comprueba tu conexión 📡</div>';
+      list.innerHTML = `
+        <div style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">
+          No se pudo cargar el ranking.<br>Comprueba tu conexión 📡
+        </div>`;
     }
-    return;
-  }
-  
-  // Agrupar por jugador
-  const porJugador = {};
-  scores.forEach(s => {
-    if (!porJugador[s.player_name]) porJugador[s.player_name] = {};
-    porJugador[s.player_name][s.minijuego] = s.puntuacion;
-  });
-
-  // Si soy yo, actualizar misScores
-  if (jugadorActual && porJugador[jugadorActual]) {
-    misScores = porJugador[jugadorActual];
   }
 
-  // Calcular media
-  const ranking = Object.entries(porJugador).map(([nombre, sc]) => {
-    const vals = Object.values(sc);
-    const media = vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
-    return { nombre, scores: sc, media, jugados: vals.length };
-  }).sort((a,b) => b.media - a.media);
-
-  rankingData = ranking;
-  renderRanking();
+  // SIEMPRE refrescar la rejilla de minijuegos (esto faltaba)
   actualizarMinijuegosGrid();
 }
 
@@ -935,7 +969,7 @@ function renderRanking() {
           <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div>
           <div class="rank-details">${details} · ${p.jugados}/4</div>
         </div>
-        <div class="rank-score">${p.media}</div>
+        <div class="rank-score">${p.total}</div>
       </div>`;
   }).join('');
 }
@@ -944,7 +978,13 @@ function renderRanking() {
 // UNLOCK LOGIC
 // ══════════════════════════════════════════════
 function isUnlocked(id) {
+
+  if (esPrueba(jugadorActual)) {
+    return true;
+  }
+
   const now = new Date();
+
   return now >= UNLOCK_DATES[id];
 }
 
@@ -956,22 +996,42 @@ function formatUnlockDate(id) {
 // ══════════════════════════════════════════════
 // LOBBY
 // ══════════════════════════════════════════════
+function tiempoHasta(fecha) {
+  const ms = fecha - new Date();
+  if (ms <= 0) return null;
+  const d = Math.floor(ms / 86400000);
+  const h = Math.floor((ms % 86400000) / 3600000);
+  const min = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  if (d > 0) return `${d}d ${h}h ${min}m`;
+  if (h > 0) return `${h}h ${min}m ${s}s`;
+  return `${min}m ${s}s`;
+}
+
 function actualizarMinijuegosGrid() {
   const grid = document.getElementById('minijuegos-grid');
   if (!grid) return;
 
+  const esAdmin = jugadorActual === ADMIN;
+  const modoPrueba = esPrueba(jugadorActual);
+
   grid.innerHTML = MINIJUEGOS_CONFIG.map(m => {
     const unlocked = isUnlocked(m.id);
-    const done = misScores[m.id] !== undefined;
+    // En modo prueba (admin o tester) nunca hay minijuegos "completados": se pueden rejugar
+    const done = !modoPrueba && misScores[m.id] !== undefined;
     const sc = misScores[m.id];
 
     let statusHtml = '';
     if (done) {
       statusHtml = `<div class="minijuego-score">${sc}</div><div class="minijuego-status">✅ Completado</div>`;
     } else if (unlocked) {
-      statusHtml = `<div class="minijuego-status">¡Disponible!</div>`;
+      const etiqueta = esAdmin ? '👑 Jugar (admin)' : (modoPrueba ? '🧪 Jugar (prueba)' : '¡Disponible!');
+      statusHtml = `<div class="minijuego-status">${etiqueta}</div>`;
     } else {
-      statusHtml = `<div class="unlock-date">Se desbloquea el ${formatUnlockDate(m.id)}</div>`;
+      const cd = tiempoHasta(UNLOCK_DATES[m.id]);
+      statusHtml = `
+        <div class="unlock-date">Se desbloquea el ${formatUnlockDate(m.id)}</div>
+        <div class="countdown" id="cd-${m.id}">⏳ ${cd || ''}</div>`;
     }
 
     return `
@@ -985,6 +1045,23 @@ function actualizarMinijuegosGrid() {
   }).join('');
 }
 
+// Actualiza los contadores cada segundo; si algo se desbloquea, repinta la rejilla
+function tickCountdowns() {
+  const lobbyActivo = document.getElementById('screen-lobby').classList.contains('active');
+  if (!lobbyActivo) return;
+  let necesitaRepintar = false;
+  MINIJUEGOS_CONFIG.forEach(m => {
+    const el = document.getElementById(`cd-${m.id}`);
+    if (el) {
+      const t = tiempoHasta(UNLOCK_DATES[m.id]);
+      if (t) el.textContent = `⏳ ${t}`;
+      else necesitaRepintar = true; // acaba de desbloquearse
+    }
+  });
+  if (necesitaRepintar) actualizarMinijuegosGrid();
+}
+setInterval(tickCountdowns, 1000);
+
 // ══════════════════════════════════════════════
 // NAVEGACIÓN
 // ══════════════════════════════════════════════
@@ -995,14 +1072,42 @@ function showScreen(id) {
 }
 
 async function entrar() {
-  const sel = document.getElementById('select-jugador');
-  const nombre = sel.value;
-  if (!nombre) { showToast('Selecciona tu nombre primero 👆'); return; }
-  jugadorActual = nombre;
-  document.getElementById('lobby-nombre').textContent = nombre;
-  showScreen('lobby');
-  await actualizarRanking();
-  initRealtime();
+
+    const sel = document.getElementById('select-jugador');
+    const nombre = sel.value;
+
+    if (!nombre) {
+        showToast("Selecciona tu nombre");
+        return;
+    }
+
+    // Admin y perfiles de prueba entran sin bloqueo de dispositivo
+    if (!esPrueba(nombre)) {
+        try {
+            const dispositivo = await getDevice();
+            if (dispositivo) {
+                if (dispositivo.player_name !== nombre) {
+                    showToast(`⚠️ Este dispositivo ya pertenece a ${dispositivo.player_name}`);
+                    return;
+                }
+            } else {
+                await registerDevice(nombre);
+            }
+        } catch (err) {
+            console.error('Error comprobando dispositivo:', err);
+            // fail-open: si Supabase falla, dejamos entrar igualmente para no cortar la fiesta
+        }
+    }
+
+    jugadorActual = nombre;
+
+    document.getElementById("lobby-nombre").textContent = nombre;
+
+    showScreen("lobby");
+
+    await actualizarRanking();
+
+    initRealtime();
 }
 
 function volverLobby() {
@@ -1015,7 +1120,8 @@ function volverLobby() {
 // INICIAR MINIJUEGO
 // ══════════════════════════════════════════════
 function startMinijuego(id) {
-  if (misScores[id] !== undefined) {
+
+  if (misScores[id] !== undefined && !esPrueba(jugadorActual)) {
     showCompletado(id);
     return;
   }
@@ -1342,22 +1448,31 @@ function renderFrase(body, p, pct, diffLabel, diffClass) {
 }
 
 function formatFrase(frase, pista, respuesta) {
-  const palabras = respuesta.split(' ');
-  let blanks = palabras.map((p, i) => {
-    if (i < pista) return `<span style="color:var(--accent3);font-weight:900">${p}</span>`;
-    return `<span class="blank">${'_'.repeat(p.length)}</span>`;
-  }).join(' ');
-  
-  return frase.replace(/___/g, blanks);
+  // Huecos: un grupo de "_" por cada palabra de la respuesta (sin revelar nada)
+  const wordBlanks = respuesta.split(' ')
+    .map(w => `<span class="blank">${'_'.repeat(w.length)}</span>`)
+    .join(' ');
+
+  // Sustituye desde el primer ___ hasta el último ___ por los huecos completos.
+  // Así frases con varios ___ (ej. "un ___ de ___") quedan limpias.
+  const first = frase.indexOf('___');
+  if (first === -1) return frase + ' ' + wordBlanks;
+  const last = frase.lastIndexOf('___');
+  return frase.slice(0, first) + wordBlanks + frase.slice(last + 3);
 }
 
 function buildWordleGrid(len, maxIntentos) {
-  const cols = Math.min(len, 10);
+  const cols = len;
+  const gap = 4;
+  const maxRow = 320;
+  let cell = Math.floor((maxRow - gap * (cols - 1)) / cols);
+  cell = Math.max(22, Math.min(44, cell));
+  const fs = Math.round(cell * 0.42);
   let html = '';
   for (let i = 0; i < maxIntentos; i++) {
-    html += '<div class="wordle-row">';
+    html += `<div class="wordle-row" style="gap:${gap}px">`;
     for (let j = 0; j < cols; j++) {
-      html += `<div class="wordle-cell" id="cell-${i}-${j}"></div>`;
+      html += `<div class="wordle-cell" id="cell-${i}-${j}" style="width:${cell}px;height:${cell}px;font-size:${fs}px"></div>`;
     }
     html += '</div>';
   }
@@ -1381,7 +1496,7 @@ let currentInput = '';
 function presionarTecla(key) {
   if (wordleState.completado) return;
   const len = wordleState.palabra.length;
-  const cols = Math.min(len, 10);
+  const cols = len;
   
   if (key === '⌫') {
     if (currentInput.length > 0) {
@@ -1404,7 +1519,7 @@ function presionarTecla(key) {
 function evaluarIntento() {
   const intento = currentInput;
   const palabra = wordleState.palabra;
-  const cols = Math.min(palabra.length, 10);
+  const cols = palabra.length;
   const row = wordleState.intentoActual;
 
   const resultado = Array(cols).fill('absent');
@@ -1498,15 +1613,25 @@ async function finalizarMinijuego() {
 
   // Intentar guardar en Supabase. Si falla, avisar pero no congelar nada.
   try {
-    await upsertScore(jugadorActual, minijuegoActivo, puntuacionMinijuego);
-  } catch (err) {
+if (jugadorActual !== ADMIN) {
+    await upsertScore(
+        jugadorActual,
+        minijuegoActivo,
+        puntuacionMinijuego
+    );
+}  } catch (err) {
     console.error('Error guardando puntuación:', err);
     showToast('⚠️ No se pudo guardar online, reintentando...');
     // Reintento una vez tras 2s
     setTimeout(async () => {
       try {
-        await upsertScore(jugadorActual, minijuegoActivo, puntuacionMinijuego);
-        showToast('✅ Puntuación guardada');
+if (jugadorActual !== ADMIN) {
+    await upsertScore(
+        jugadorActual,
+        minijuegoActivo,
+        puntuacionMinijuego
+    );
+}        showToast('✅ Puntuación guardada');
       } catch (e) {
         console.error('Reintento fallido:', e);
         showToast('❌ Error al guardar. Revisa tu conexión.');
@@ -1548,7 +1673,7 @@ function showCompletado(id) {
 
 async function showFinal() {
   await actualizarRanking();
-  
+
   const ganador = rankingData[0];
   const wCard = document.getElementById('winner-card');
   if (ganador) {
@@ -1559,7 +1684,7 @@ async function showFinal() {
     wCard.innerHTML = `
       <div class="winner-emoji">🥇</div>
       <div class="winner-name">${ganador.nombre}</div>
-      <div class="winner-score">Media: <span>${ganador.media}</span></div>
+      <div class="winner-score">Total: <span>${ganador.total} pts</span></div>
       <div style="font-size:13px;color:var(--muted);margin-top:12px;line-height:2">${detalles}</div>`;
   }
 
@@ -1572,7 +1697,7 @@ async function showFinal() {
         <div class="rank-name">${p.nombre}${p.nombre === jugadorActual ? ' (tú)' : ''}</div>
         <div class="rank-details">${MINIJUEGOS_CONFIG.map(m => `${m.emoji}${p.scores[m.id] ?? '—'}`).join(' ')}</div>
       </div>
-      <div class="rank-score">${p.media}</div>
+      <div class="rank-score">${p.total}</div>
     </div>`).join('');
 
   showScreen('final');
