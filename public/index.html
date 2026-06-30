@@ -847,7 +847,9 @@ async function getScores() {
 }
 
 async function upsertScore(playerName, minijuego, puntuacion) {
-  return await sbFetch('scores', {
+  // on_conflict indica a Supabase por qué columnas detectar el duplicado
+  // para que ACTUALICE en vez de dar error si ya existe esa puntuación
+  return await sbFetch('scores?on_conflict=player_name,minijuego', {
     method: 'POST',
     headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify({ player_name: playerName, minijuego, puntuacion })
@@ -871,7 +873,17 @@ function initRealtime() {
 // RANKING
 // ══════════════════════════════════════════════
 async function actualizarRanking() {
-  const scores = await getScores();
+  let scores;
+  try {
+    scores = await getScores();
+  } catch (err) {
+    console.error('Error cargando ranking:', err);
+    const list = document.getElementById('ranking-list');
+    if (list && !rankingData.length) {
+      list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">No se pudo cargar el ranking.<br>Comprueba tu conexión 📡</div>';
+    }
+    return;
+  }
   
   // Agrupar por jugador
   const porJugador = {};
@@ -1476,13 +1488,30 @@ function siguientePregunta() {
 }
 
 async function finalizarMinijuego() {
-  await upsertScore(jugadorActual, minijuegoActivo, puntuacionMinijuego);
+  // Guardar siempre localmente para que la pantalla final no dependa de la red
   misScores[minijuegoActivo] = puntuacionMinijuego;
-  
-  // Comprobar si todos completados
   const todosCompletos = MINIJUEGOS_CONFIG.every(m => misScores[m.id] !== undefined);
-  
+
+  // Mostrar la pantalla de completado ya, sin esperar al guardado
   showCompletadoMinijuego(puntuacionMinijuego, todosCompletos);
+
+  // Intentar guardar en Supabase. Si falla, avisar pero no congelar nada.
+  try {
+    await upsertScore(jugadorActual, minijuegoActivo, puntuacionMinijuego);
+  } catch (err) {
+    console.error('Error guardando puntuación:', err);
+    showToast('⚠️ No se pudo guardar online, reintentando...');
+    // Reintento una vez tras 2s
+    setTimeout(async () => {
+      try {
+        await upsertScore(jugadorActual, minijuegoActivo, puntuacionMinijuego);
+        showToast('✅ Puntuación guardada');
+      } catch (e) {
+        console.error('Reintento fallido:', e);
+        showToast('❌ Error al guardar. Revisa tu conexión.');
+      }
+    }, 2000);
+  }
 }
 
 function showCompletadoMinijuego(pts, todosCompletos) {
