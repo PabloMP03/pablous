@@ -847,12 +847,13 @@ async function getScores() {
 }
 
 async function upsertScore(playerName, minijuego, puntuacion) {
-  // on_conflict indica a Supabase por qué columnas detectar el duplicado
-  // para que ACTUALICE en vez de dar error si ya existe esa puntuación
-  return await sbFetch('scores?on_conflict=player_name,minijuego', {
-    method: 'POST',
-    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify({ player_name: playerName, minijuego, puntuacion })
+  return await sbFetch("scores", {
+    method: "POST",
+    body: JSON.stringify({
+      player_name: playerName,
+      minijuego,
+      puntuacion
+    })
   });
 }
 
