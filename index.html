@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PabloUs 🎮</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --card: #1c1c28;
+      --border: #2a2a3d;
+      --accent: #ff3d6b;
+      --accent2: #7c3aed;
+      --accent3: #00d4ff;
+      --gold: #ffd700;
+      --text: #f0f0f5;
+      --muted: #6b6b8a;
+      --success: #00e676;
+      --error: #ff3d6b;
+      --easy: #00e676;
+      --medium: #ffaa00;
+      --hard: #ff6b35;
+      --vhard: #ff3d6b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── PANTALLAS ── */
+    .screen { display: none; min-height: 100vh; padding: 20px; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+    /* ── INICIO ── */
+    #screen-inicio {
+      background: radial-gradient(ellipse at top, #1a0a2e 0%, var(--bg) 60%);
+      text-align: center;
+      gap: 32px;
+    }
+
+    .logo-wrap { position: relative; }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(64px, 20vw, 120px);
+      line-height: 0.9;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 2px;
+      filter: drop-shadow(0 0 30px rgba(255,61,107,0.4));
+    }
+    .logo-sub {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    .inicio-desc {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 300px;
+      line-height: 1.6;
+    }
+
+    .input-wrap { width: 100%; max-width: 320px; }
+    .input-label { font-size: 12px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+
+    select, input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 16px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    select:focus, input[type="text"]:focus { border-color: var(--accent); }
+    select option { background: var(--card); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 32px;
+      border-radius: 12px;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      max-width: 320px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      box-shadow: 0 4px 20px rgba(255,61,107,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(255,61,107,0.5); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-secondary {
+      background: var(--card);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+    }
+    .btn-skip {
+      background: transparent;
+      color: var(--muted);
+      border: 1.5px solid var(--border);
+      font-size: 14px;
+      padding: 12px 24px;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+    /* ── LOBBY / RANKING ── */
+    #screen-lobby {
+      background: radial-gradient(ellipse at top, #0a1a2e 0%, var(--bg) 60%);
+      gap: 24px;
+      padding: 24px 20px;
+      justify-content: flex-start;
+      padding-top: 48px;
+    }
+
+    .lobby-header { text-align: center; width: 100%; }
+    .lobby-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .lobby-player {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .lobby-player span { color: var(--text); font-weight: 700; }
+
+    .minijuegos-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .minijuego-card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .minijuego-card.locked {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .minijuego-card.done {
+      border-color: var(--success);
+      background: rgba(0,230,118,0.05);
+    }
+    .minijuego-card:not(.locked):not(.done):hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .minijuego-emoji { font-size: 32px; margin-bottom: 8px; }
+    .minijuego-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .minijuego-status { font-size: 11px; color: var(--muted); }
+    .minijuego-score { font-size: 18px; font-weight: 900; color: var(--success); margin-top: 4px; }
+    .lock-icon { font-size: 20px; position: absolute; top: 8px; right: 8px; }
+    .unlock-date { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+    /* ── RANKING ── */
+    .ranking-section { width: 100%; max-width: 420px; }
+    .ranking-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: var(--gold);
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+    .ranking-list { display: flex; flex-direction: column; gap: 8px; }
+    .ranking-item {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ranking-item.me { border-color: var(--accent); background: rgba(255,61,107,0.05); }
+    .ranking-item.first { border-color: var(--gold); background: rgba(255,215,0,0.05); }
+    .rank-pos { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--muted); width: 32px; text-align: center; }
+    .rank-pos.gold { color: var(--gold); }
+    .rank-pos.silver { color: #c0c0c0; }
+    .rank-pos.bronze { color: #cd7f32; }
+    .rank-info { flex: 1; }
+    .rank-name { font-weight: 700; font-size: 15px; }
+    .rank-details { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .rank-score { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--accent3); }
+
+    /* ── MINIJUEGO WRAPPER ── */
+    #screen-minijuego {
+      padding: 0;
+      justify-content: flex-start;
+      background: var(--bg);
+    }
+
+    .mj-header {
+      width: 100%;
+      padding: 16px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mj-back { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px; }
+    .mj-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; flex: 1; }
+    .mj-pregunta { font-size: 12px; color: var(--muted); }
+
+    .mj-body { flex: 1; width: 100%; padding: 24px 20px; overflow-y: auto; }
+
+    /* Barra de progreso */
+    .progress-bar-wrap { width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 24px; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; transition: width 0.3s; }
+
+    /* Puntuación en tiempo real */
+    .score-display {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .score-label { font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+    .score-value { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--accent3); line-height: 1; }
+
+    /* Tarjeta de pregunta */
+    .question-card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .question-difficulty {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+    .diff-facil { background: rgba(0,230,118,0.15); color: var(--easy); }
+    .diff-medio { background: rgba(255,170,0,0.15); color: var(--medium); }
+    .diff-dificil { background: rgba(255,107,53,0.15); color: var(--hard); }
+    .diff-muydificil { background: rgba(255,61,107,0.15); color: var(--vhard); }
+
+    .question-text {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    .question-points { font-size: 12px; color: var(--muted); }
+
+    /* Opciones */
+    .options-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .option-btn {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .option-btn:hover:not(:disabled) { border-color: var(--accent2); background: rgba(124,58,237,0.1); }
+    .option-btn.correct { border-color: var(--success) !important; background: rgba(0,230,118,0.15) !important; color: var(--success); }
+    .option-btn.wrong { border-color: var(--error) !important; background: rgba(255,61,107,0.15) !important; color: var(--error); }
+    .option-btn:disabled { cursor: not-allowed; }
+    .option-letter {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ── CANCIONES ── */
+    .audio-player {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .audio-note { font-size: 48px; margin-bottom: 12px; }
+    .audio-timer { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--accent3); }
+    .audio-hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .play-btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 50%;
+      width: 64px;
+      height: 64px;
+      font-size: 24px;
+      cursor: pointer;
+      margin: 12px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+      box-shadow: 0 4px 20px rgba(255,61,107,0.4);
+    }
+    .play-btn:hover { transform: scale(1.1); }
+    .play-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── FOTOS ── */
+    .foto-container {
+      position: relative;
+      width: 100%;
+      max-width: 340px;
+      margin: 0 auto 20px;
+      border-radius: 20px;
+      overflow: hidden;
+      aspect-ratio: 3/4;
+      background: var(--card);
+    }
+    .foto-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      image-rendering: pixelated;
+      filter: blur(0px);
+      transition: filter 0.5s;
+    }
+    .foto-intentos {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .intento-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.2s;
+    }
+    .intento-dot.used { background: var(--error); }
+    .intento-dot.active { background: var(--accent); }
+
+    .selector-wrap { width: 100%; max-width: 340px; margin: 0 auto 12px; }
+
+    /* ── FRASES / WORDLE ── */
+    .frase-display {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      font-size: 18px;
+      line-height: 1.8;
+      text-align: center;
+      font-style: italic;
+      color: var(--muted);
+    }
+    .frase-display .blank {
+      display: inline-block;
+      border-bottom: 2px solid var(--accent);
+      min-width: 40px;
+      color: var(--text);
+      font-style: normal;
+      font-weight: 700;
+    }
+
+    .wordle-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .wordle-row { display: flex; gap: 6px; }
+    .wordle-cell {
+      width: 44px; height: 44px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      transition: all 0.1s;
+    }
+    .wordle-cell.active { border-color: var(--accent2); }
+    .wordle-cell.correct { background: var(--success); border-color: var(--success); color: #000; }
+    .wordle-cell.present { background: var(--medium); border-color: var(--medium); color: #000; }
+    .wordle-cell.absent { background: var(--border); border-color: var(--border); color: var(--muted); }
+
+    .keyboard {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+      width: 100%;
+    }
+    .keyboard-row { display: flex; gap: 4px; }
+    .key {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.1s;
+      min-width: 30px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .key:active { transform: scale(0.92); }
+    .key.wide { min-width: 46px; font-size: 11px; }
+    .key.correct { background: var(--success); border-color: var(--success); color: #000; }
+    .key.present { background: var(--medium); border-color: var(--medium); color: #000; }
+    .key.absent { background: #333; border-color: #333; color: var(--muted); }
+
+    /* ── RESULTADO PREGUNTA ── */
+    .result-banner {
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 16px;
+      font-weight: 700;
+      font-size: 18px;
+    }
+    .result-banner.correct { background: rgba(0,230,118,0.15); color: var(--success); border: 1px solid var(--success); }
+    .result-banner.wrong { background: rgba(255,61,107,0.15); color: var(--error); border: 1px solid var(--error); }
+    .result-points { font-size: 28px; font-family: 'Bebas Neue', sans-serif; }
+
+    /* ── FINAL ── */
+    #screen-final {
+      background: radial-gradient(ellipse at center, #1a0a2e 0%, var(--bg) 70%);
+      gap: 24px;
+      padding: 32px 20px;
+      justify-content: flex-start;
+      padding-top: 48px;
+    }
+    .final-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 56px;
+      text-align: center;
+      background: linear-gradient(135deg, var(--gold), #ff6b35);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .winner-card {
+      background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,107,53,0.1));
+      border: 2px solid var(--gold);
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      width: 100%;
+      max-width: 340px;
+    }
+    .winner-emoji { font-size: 56px; margin-bottom: 8px; }
+    .winner-name { font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: var(--gold); }
+    .winner-score { font-size: 14px; color: var(--muted); margin-top: 4px; }
+    .winner-score span { color: var(--gold); font-weight: 700; font-size: 20px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-weight: 600;
+      font-size: 14px;
+      z-index: 999;
+      transition: transform 0.3s;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── LOCKED SCREEN ── */
+    .locked-overlay {
+      text-align: center;
+      padding: 48px 24px;
+    }
+    .locked-emoji { font-size: 64px; margin-bottom: 16px; }
+    .locked-title { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--muted); margin-bottom: 8px; }
+    .locked-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .locked-date { color: var(--accent3); font-weight: 700; }
+
+    /* ── COMPLETADO ── */
+    .completado-overlay {
+      text-align: center;
+      padding: 48px 24px;
+    }
+    .completado-emoji { font-size: 64px; margin-bottom: 16px; }
+    .completado-title { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--success); margin-bottom: 8px; }
+    .completado-score { font-family: 'Bebas Neue', sans-serif; font-size: 64px; color: var(--accent3); }
+
+    /* ── UTILS ── */
+    .text-center { text-align: center; }
+    .w-full { width: 100%; max-width: 420px; }
+    .gap-12 { gap: 12px; }
+    .flex-col { display: flex; flex-direction: column; align-items: center; }
+
+    /* Confetti */
+    @keyframes fall {
+      0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .confetti-piece {
+      position: fixed;
+      width: 10px; height: 10px;
+      top: -20px;
+      pointer-events: none;
+      z-index: 9999;
+      border-radius: 2px;
+      animation: fall linear forwards;
+    }
+
+    /* Animaciones */
+    @keyframes pop {
+      0% { transform: scale(0.8); opacity: 0; }
+      70% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .pop { animation: pop 0.3s ease forwards; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+    .shake { animation: shake 0.4s ease; }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      padding: 48px;
+    }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ PANTALLA INICIO ══════════════ -->
+<div id="screen-inicio" class="screen active">
+  <div class="logo-wrap">
+    <div class="logo">PabloUs</div>
+    <div class="logo-sub">El juego del cumple 🎂</div>
+  </div>
+  <p class="inicio-desc">4 minijuegos para demostrar que conoces a Pablo mejor que nadie</p>
+  <div class="input-wrap flex-col" style="gap:16px">
+    <div style="width:100%">
+      <label class="input-label">¿Quién eres?</label>
+      <select id="select-jugador">
+        <option value="">Selecciona tu nombre...</option>
+        <option>Pablo</option>
+        <option>Andres</option>
+        <option>Ale</option>
+        <option>Claudio</option>
+        <option>Cesar</option>
+        <option>Fali</option>
+        <option>Juanki</option>
+        <option>Fran</option>
+        <option>Lucia</option>
+        <option>Maria</option>
+        <option>Ibra</option>
+        <option>Nacho</option>
+        <option>Dani</option>
+        <option>Collado</option>
+        <option>Vari</option>
+        <option>Sergio</option>
+        <option>Roberto</option>
+        <option>Sofia</option>
+        <option>Wili</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="entrar()">Entrar al juego 🎮</button>
+  </div>
+</div>
+
+<!-- ══════════════ PANTALLA LOBBY ══════════════ -->
+<div id="screen-lobby" class="screen">
+  <div class="lobby-header">
+    <div class="lobby-title">PabloUs</div>
+    <div class="lobby-player">Jugando como <span id="lobby-nombre">—</span></div>
+  </div>
+
+  <div class="minijuegos-grid" id="minijuegos-grid">
+    <!-- generado por JS -->
+  </div>
+
+  <div class="ranking-section">
+    <div class="ranking-title">🏆 Ranking</div>
+    <div class="ranking-list" id="ranking-list">
+      <div class="loading"><div class="spinner"></div> Cargando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PANTALLA MINIJUEGO ══════════════ -->
+<div id="screen-minijuego" class="screen">
+  <div class="mj-header">
+    <button class="mj-back" onclick="volverLobby()">←</button>
+    <div class="mj-title" id="mj-titulo">—</div>
+    <div class="mj-pregunta" id="mj-pregunta-num">1/4</div>
+  </div>
+  <div class="mj-body" id="mj-body">
+    <!-- contenido dinámico -->
+  </div>
+</div>
+
+<!-- ══════════════ PANTALLA FINAL ══════════════ -->
+<div id="screen-final" class="screen">
+  <div class="final-title">🏆 Ganador 🏆</div>
+  <div class="winner-card" id="winner-card"><!-- generado --></div>
+  <div class="ranking-section w-full" style="max-width:420px">
+    <div class="ranking-title">Clasificación Final</div>
+    <div class="ranking-list" id="final-ranking-list"><!-- generado --></div>
+  </div>
+  <button class="btn btn-secondary" onclick="showScreen('lobby')" style="max-width:420px">Volver al lobby</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG & DATA
+// ══════════════════════════════════════════════
+const SUPABASE_URL = 'https://zruxlqpxujrsnersitcs.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpydXhscXB4dWpyc25lcnNpdGNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NjU3NDQsImV4cCI6MjA5ODM0MTc0NH0.YVvtGKMxuC9g0EAZcU4RVnrRbKv04Fktx-Zqqv2ktqk';
+
+// Zona horaria España (Europe/Madrid)
+const UNLOCK_DATES = {
+  canciones: new Date('2025-07-04T00:00:00+02:00'),
+  fotos:     new Date('2025-07-11T00:00:00+02:00'),
+  frases:    new Date('2025-07-11T00:00:00+02:00'),
+  trivia:    new Date('2025-07-18T00:00:00+02:00'),
+};
+
+const MINIJUEGOS_CONFIG = [
+  { id: 'canciones', emoji: '🎵', nombre: 'Adivina la canción' },
+  { id: 'fotos',     emoji: '📸', nombre: 'Adivina la foto'    },
+  { id: 'frases',    emoji: '💬', nombre: 'Completa la frase'  },
+  { id: 'trivia',    emoji: '🧠', nombre: 'Trivia'             },
+];
+
+// ── TRIVIA DATA ──
+const TRIVIA = {
+  facil: [
+    { q: '¿Cómo se llama el equipo de Fútbol Sala de Pablo?', ops: ['Servetsa','Filo Rojo','RBDC','No juego en ningún equipo'], r: 1 },
+    { q: '¿Cómo se llama el equipo de Fútbol 7 de Pablo?', ops: ['Servetsa','Filo Rojo','RBDC','No juego en ningún equipo de Fútbol 7'], r: 0 },
+    { q: '¿Cuál es el modelo del teléfono de Pablo?', ops: ['iPhone 16','iPhone 16 Pro','iPhone 17','iPhone 17 e'], r: 0 },
+  ],
+  medio: [
+    { q: '¿Cuál es la marca del coche de Pablo?', ops: ['Ford','Seat','Renault','KIA'], r: 0 },
+    { q: '¿Qué perro le gustaría tener a Pablo?', ops: ['Golden Retriever','Labrador','Pastor Alemán','Border Collie'], r: 1 },
+    { q: '¿Cómo se llama la madre de Pablo?', ops: ['Laura','Sonia','Carolina','Mercedes'], r: 3 },
+  ],
+  dificil: [
+    { q: '¿Cuál es la comida favorita de Pablo?', ops: ['Carrillada','Pizza del Sloopy','Albóndigas','Puchero'], r: 0 },
+    { q: '¿Cómo se llama la empresa donde trabaja Pablo?', ops: ['Manpower','CRIT','Adecco','Grupo Norte'], r: 1 },
+    { q: '¿Cuál es la serie favorita de Pablo?', ops: ['La casa de papel','Élite','Breaking Bad','Prison Break'], r: 3 },
+  ],
+  muydificil: [
+    { q: '¿Cuál es el personaje que más ha jugado Pablo en el LoL?', ops: ['Veigar','Diana','Renekton','Sylas'], r: 3 },
+    { q: '¿Qué lenguaje de programación usa Pablo para trabajar?', ops: ['C','C++','C#','Java'], r: 2 },
+    { q: '¿Cómo se llamaba el centro de estudios de Pablo en Málaga?', ops: ['42','Campus Telefónica','Polo Digital','Campus ISPAL'], r: 0 },
+  ],
+};
+
+// ── CANCIONES DATA ──
+const CANCIONES = {
+  facil: [
+    { titulo: 'Kemba Walker', artista: 'Eladio Carrión & Bad Bunny', archivo: 'Kemba-Walker-10Sec.mp3', repetible: true, ops: ['Kemba Walker','Sauce Boyz','La Manta','Tata'], r: 0 },
+    { titulo: 'Coco Chanel', artista: 'Eladio Carrión & Bad Bunny', archivo: 'CocoChanel-10Sec.mp3', repetible: true, ops: ['La Corriente','Coco Chanel','Fiel','Ojitos Lindos'], r: 1 },
+    { titulo: 'Amanece', artista: 'Anuel AA', archivo: 'Amanece-10Sec.mp3', repetible: true, ops: ['Secreto','China','Amanece','3 de la Mañana'], r: 2 },
+  ],
+  medio: [
+    { titulo: 'Thunder y Lightning', artista: 'Eladio Carrión & Bad Bunny', archivo: 'ThunderYLightning-7Sec.mp3', repetible: true, ops: ['Thunder y Lightning','Bichiyal','Yonaguni','El Apagón'], r: 0 },
+    { titulo: 'Sola (Remix)', artista: 'Anuel, Daddy Yankee, Zion & Lennox, Farruko y Wisin', archivo: 'SolaRemix-7Sec.mp3', repetible: true, ops: ['La Modelo','MIA','Sola (Remix)','Shaky Shaky'], r: 2 },
+    { titulo: 'Brindemos', artista: 'Anuel AA & Ozuna', archivo: 'Brindemos-7Sec.mp3', repetible: true, ops: ['Brindemos','Taki Taki','Bebe','Te Boté'], r: 0 },
+  ],
+  dificil: [
+    { titulo: 'Adivino', artista: 'Myke Towers & Bad Bunny', archivo: 'Adivino-5Sec.mp3', repetible: true, ops: ['Adivino','Dakiti','Safaera','Chambea'], r: 0 },
+    { titulo: 'VAMOaCOCHI', artista: 'Omar Courtz', archivo: 'Vamoacochi-5Sec.mp3', repetible: true, ops: ['VAMOaCOCHI','Porfa','Tumbando el Club','No Quiero'], r: 0 },
+    { titulo: 'Hace mucho tiempo', artista: 'Arcangel', archivo: 'HaceMuchoTiempo-5Sec.mp3', repetible: true, ops: ['Pa\' Mí','Felices los 4','De la Ghetto','Hace mucho tiempo'], r: 3 },
+  ],
+  muydificil: [
+    { titulo: 'En el castillo', artista: 'Anuel AA', archivo: 'EnElCastillo-5Sec.mp3', repetible: false, ops: ['En el castillo','Bebe','Nos Comemos Vivos','Sola'], r: 0 },
+    { titulo: 'Mi Error', artista: 'Eladio Carrión & Zion', archivo: 'MiError-5Sec.mp3', repetible: false, ops: ['Mi Error','Pa\' Mí','Saturno','10,000 Horas'], r: 0 },
+    { titulo: 'Celine', artista: 'Kidd Keo & Ghost Killer Track', archivo: 'Celine-5Sec.mp3', repetible: false, ops: ['Glock','Celine','Badman','Trapboy'], r: 1 },
+  ],
+};
+
+// ── FOTOS DATA ──
+const FOTOS = {
+  facil: [
+    { archivo: 'Quien_es_Facil_-_Ale.jpeg', nombre: 'Ale' },
+    { archivo: 'Quien_es_Facil_-_Andres.jpeg', nombre: 'Andres' },
+    { archivo: 'Quien_es_Facil_-_Sergio.jpeg', nombre: 'Sergio' },
+  ],
+  medio: [
+    { archivo: 'Quien_es_Medio_-_Fran.jpeg', nombre: 'Fran' },
+    { archivo: 'Quien_es_Medio_-_Sofia.jpeg', nombre: 'Sofia' },
+    { archivo: 'Quien_es_Medio_-_Vari.jpeg', nombre: 'Vari' },
+  ],
+  dificil: [
+    { archivo: 'Quien_es_Dificil_-_Claudio.jpeg', nombre: 'Claudio' },
+    { archivo: 'Quien_es_Dificil_-_Ibra.jpeg', nombre: 'Ibra' },
+    { archivo: 'Quien_es_Dificil_-_Wili.jpeg', nombre: 'Wili' },
+  ],
+};
+
+const NOMBRES_GRUPO = ['Pablo','Andres','Ale','Claudio','Cesar','Fali','Juanki','Fran','Lucia','Maria','Ibra','Nacho','Dani','Collado','Vari','Sergio','Roberto','Sofia','Wili'];
+
+// ── FRASES DATA ──
+const FRASES = {
+  facil: [
+    { quien: 'Sergio', frase: 'Una play rica y sana en ___', respuesta: 'PROTEINA', pista: 5 },
+    { quien: 'Godoalita', frase: 'Ale Cañete sobrino de ___', respuesta: 'CHANQUETRE', pista: 4 },
+    { quien: 'Ale', frase: 'Tremendo ___ fan de Mecano', respuesta: 'MARICON', pista: 3 },
+  ],
+  medio: [
+    { quien: 'Fran', frase: 'Me pica de manera ___ la polla', respuesta: 'AGRADABLE', pista: 3 },
+    { quien: 'Collado', frase: 'A mi no me puede hablar alguien que tiene más ___ en el nabo que en la nevera', respuesta: 'QUESO', pista: 2 },
+    { quien: 'Ale', frase: 'A ver si el que se va a quedar sin correr eres tú ___ sin escurridor', respuesta: 'FREGONA', pista: 2 },
+  ],
+  dificil: [
+    { quien: 'Claudio', frase: 'Me ha jodido la noche un ___ de ___', respuesta: 'MONO DE AFRICA', pista: 2 },
+    { quien: 'Ibra', frase: 'Tú sin vergüenza no veas como ___ a tu puta hermana', respuesta: 'PERFORO', pista: 1 },
+    { quien: 'Ibra', frase: 'Aquí tengo a mis panas ___ es que tú eres un maricón Dani', respuesta: 'ANASUPA', pista: 1 },
+  ],
+  muydificil: [
+    { quien: 'Fran', frase: 'Se llama local Nuria me mama la polla como una puta ___', respuesta: 'VENEZOLANA', pista: 0 },
+    { quien: 'Dani', frase: 'A ver Ibra yo respetaría más a ___ ya que si tu padre tuviese el mismo razonamiento que tú no estarías aquí', respuesta: 'LAS GORDAS', pista: 0 },
+  ],
+};
+
+// Puntos por dificultad y velocidad
+const PUNTOS = { facil: 250, medio: 500, dificil: 750, muydificil: 1000 };
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let jugadorActual = '';
+let misScores = {};
+let rankingData = [];
+let realtimeChannel = null;
+let minijuegoActivo = null;
+let preguntasActuales = [];
+let preguntaIdx = 0;
+let puntuacionMinijuego = 0;
+let audioActual = null;
+
+// ══════════════════════════════════════════════
+// SUPABASE HELPERS
+// ══════════════════════════════════════════════
+async function sbFetch(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...options.headers
+    },
+    ...options
+  });
+  if (!res.ok && res.status !== 406) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  try { return await res.json(); } catch { return null; }
+}
+
+async function getScores() {
+  return await sbFetch('scores?select=*&order=completado_at.desc') || [];
+}
+
+async function upsertScore(playerName, minijuego, puntuacion) {
+  return await sbFetch('scores', {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({ player_name: playerName, minijuego, puntuacion })
+  });
+}
+
+// ══════════════════════════════════════════════
+// REALTIME
+// ══════════════════════════════════════════════
+function initRealtime() {
+  // Polling cada 10s como fallback simple
+  setInterval(async () => {
+    if (document.getElementById('screen-lobby').classList.contains('active') ||
+        document.getElementById('screen-final').classList.contains('active')) {
+      await actualizarRanking();
+    }
+  }, 10000);
+}
+
+// ══════════════════════════════════════════════
+// RANKING
+// ══════════════════════════════════════════════
+async function actualizarRanking() {
+  const scores = await getScores();
+  
+  // Agrupar por jugador
+  const porJugador = {};
+  scores.forEach(s => {
+    if (!porJugador[s.player_name]) porJugador[s.player_name] = {};
+    porJugador[s.player_name][s.minijuego] = s.puntuacion;
+  });
+
+  // Si soy yo, actualizar misScores
+  if (jugadorActual && porJugador[jugadorActual]) {
+    misScores = porJugador[jugadorActual];
+  }
+
+  // Calcular media
+  const ranking = Object.entries(porJugador).map(([nombre, sc]) => {
+    const vals = Object.values(sc);
+    const media = vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
+    return { nombre, scores: sc, media, jugados: vals.length };
+  }).sort((a,b) => b.media - a.media);
+
+  rankingData = ranking;
+  renderRanking();
+  actualizarMinijuegosGrid();
+}
+
+function renderRanking() {
+  const list = document.getElementById('ranking-list');
+  if (!list) return;
+
+  if (!rankingData.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px;font-size:14px;">Nadie ha jugado aún 👀</div>';
+    return;
+  }
+
+  const medals = ['🥇','🥈','🥉'];
+  list.innerHTML = rankingData.map((p, i) => {
+    const esYo = p.nombre === jugadorActual;
+    const clases = `ranking-item ${esYo ? 'me' : ''} ${i === 0 ? 'first' : ''}`;
+    const posClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    const details = MINIJUEGOS_CONFIG.map(m => {
+      const sc = p.scores[m.id];
+      return sc !== undefined ? `${m.emoji}${sc}` : `${m.emoji}—`;
+    }).join(' ');
+    return `
+      <div class="${clases}">
+        <div class="rank-pos ${posClass}">${medals[i] || (i+1)}</div>
+        <div class="rank-info">
+          <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div>
+          <div class="rank-details">${details} · ${p.jugados}/4</div>
+        </div>
+        <div class="rank-score">${p.media}</div>
+      </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// UNLOCK LOGIC
+// ══════════════════════════════════════════════
+function isUnlocked(id) {
+  const now = new Date();
+  return now >= UNLOCK_DATES[id];
+}
+
+function formatUnlockDate(id) {
+  const d = UNLOCK_DATES[id];
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+}
+
+// ══════════════════════════════════════════════
+// LOBBY
+// ══════════════════════════════════════════════
+function actualizarMinijuegosGrid() {
+  const grid = document.getElementById('minijuegos-grid');
+  if (!grid) return;
+
+  grid.innerHTML = MINIJUEGOS_CONFIG.map(m => {
+    const unlocked = isUnlocked(m.id);
+    const done = misScores[m.id] !== undefined;
+    const sc = misScores[m.id];
+
+    let statusHtml = '';
+    if (done) {
+      statusHtml = `<div class="minijuego-score">${sc}</div><div class="minijuego-status">✅ Completado</div>`;
+    } else if (unlocked) {
+      statusHtml = `<div class="minijuego-status">¡Disponible!</div>`;
+    } else {
+      statusHtml = `<div class="unlock-date">Se desbloquea el ${formatUnlockDate(m.id)}</div>`;
+    }
+
+    return `
+      <div class="minijuego-card ${!unlocked ? 'locked' : ''} ${done ? 'done' : ''}"
+           onclick="${unlocked ? `startMinijuego('${m.id}')` : ''}">
+        ${!unlocked ? '<div class="lock-icon">🔒</div>' : ''}
+        <div class="minijuego-emoji">${m.emoji}</div>
+        <div class="minijuego-name">${m.nombre}</div>
+        ${statusHtml}
+      </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${id}`).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+async function entrar() {
+  const sel = document.getElementById('select-jugador');
+  const nombre = sel.value;
+  if (!nombre) { showToast('Selecciona tu nombre primero 👆'); return; }
+  jugadorActual = nombre;
+  document.getElementById('lobby-nombre').textContent = nombre;
+  showScreen('lobby');
+  await actualizarRanking();
+  initRealtime();
+}
+
+function volverLobby() {
+  if (audioActual) { audioActual.pause(); audioActual = null; }
+  showScreen('lobby');
+  actualizarRanking();
+}
+
+// ══════════════════════════════════════════════
+// INICIAR MINIJUEGO
+// ══════════════════════════════════════════════
+function startMinijuego(id) {
+  if (misScores[id] !== undefined) {
+    showCompletado(id);
+    return;
+  }
+  
+  minijuegoActivo = id;
+  preguntaIdx = 0;
+  puntuacionMinijuego = 0;
+
+  const config = MINIJUEGOS_CONFIG.find(m => m.id === id);
+  document.getElementById('mj-titulo').textContent = `${config.emoji} ${config.nombre}`;
+
+  // Seleccionar preguntas
+  preguntasActuales = seleccionarPreguntas(id);
+
+  showScreen('minijuego');
+  renderPregunta();
+}
+
+function seleccionarPreguntas(id) {
+  const nivelesOrden = ['facil', 'medio', 'dificil', 'muydificil'];
+  let preguntas = [];
+
+  if (id === 'trivia') {
+    nivelesOrden.forEach(nivel => {
+      const pool = TRIVIA[nivel];
+      const idx = Math.floor(Math.random() * pool.length);
+      preguntas.push({ ...pool[idx], nivel, tipo: 'trivia' });
+    });
+  } else if (id === 'canciones') {
+    nivelesOrden.forEach(nivel => {
+      const pool = CANCIONES[nivel];
+      const idx = Math.floor(Math.random() * pool.length);
+      preguntas.push({ ...pool[idx], nivel, tipo: 'cancion' });
+    });
+  } else if (id === 'fotos') {
+    // fotos solo tiene 3 niveles
+    ['facil','medio','dificil'].forEach(nivel => {
+      const pool = FOTOS[nivel];
+      const idx = Math.floor(Math.random() * pool.length);
+      preguntas.push({ ...pool[idx], nivel, tipo: 'foto' });
+    });
+    // añadir una dificil extra
+    const pool2 = FOTOS['dificil'];
+    const extra = Math.floor(Math.random() * pool2.length);
+    preguntas.push({ ...pool2[extra], nivel: 'muydificil', tipo: 'foto' });
+  } else if (id === 'frases') {
+    nivelesOrden.forEach(nivel => {
+      const pool = FRASES[nivel];
+      const idx = Math.floor(Math.random() * pool.length);
+      preguntas.push({ ...pool[idx], nivel, tipo: 'frase' });
+    });
+  }
+
+  return preguntas;
+}
+
+function renderPregunta() {
+  const total = preguntasActuales.length;
+  document.getElementById('mj-pregunta-num').textContent = `${preguntaIdx + 1}/${total}`;
+
+  const pct = (preguntaIdx / total) * 100;
+  const p = preguntasActuales[preguntaIdx];
+
+  const body = document.getElementById('mj-body');
+  
+  const diffLabel = { facil: 'Fácil', medio: 'Media', dificil: 'Difícil', muydificil: 'Muy difícil' };
+  const diffClass = { facil: 'diff-facil', medio: 'diff-medio', dificil: 'diff-dificil', muydificil: 'diff-muydificil' };
+
+  if (p.tipo === 'trivia') renderTrivia(body, p, pct, diffLabel, diffClass);
+  else if (p.tipo === 'cancion') renderCancion(body, p, pct, diffLabel, diffClass);
+  else if (p.tipo === 'foto') renderFoto(body, p, pct, diffLabel, diffClass);
+  else if (p.tipo === 'frase') renderFrase(body, p, pct, diffLabel, diffClass);
+}
+
+// ══════════════════════════════════════════════
+// TRIVIA
+// ══════════════════════════════════════════════
+function renderTrivia(body, p, pct, diffLabel, diffClass) {
+  const pts = PUNTOS[p.nivel];
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="question-card pop">
+      <span class="question-difficulty ${diffClass[p.nivel]}">${diffLabel[p.nivel]}</span>
+      <div class="question-text">${p.q}</div>
+      <div class="question-points">+${pts} puntos</div>
+    </div>
+    <div class="options-grid">
+      ${p.ops.map((op, i) => `
+        <button class="option-btn" onclick="responderTrivia(${i}, ${p.r}, ${pts})">
+          <span class="option-letter">${'ABCD'[i]}</span>${op}
+        </button>`).join('')}
+    </div>`;
+}
+
+function responderTrivia(idx, correcta, pts) {
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+  
+  const esCorrecta = idx === correcta;
+  btns[idx].classList.add(esCorrecta ? 'correct' : 'wrong');
+  if (!esCorrecta) btns[correcta].classList.add('correct');
+
+  if (esCorrecta) puntuacionMinijuego += pts;
+
+  setTimeout(() => siguientePregunta(), 1200);
+}
+
+// ══════════════════════════════════════════════
+// CANCIONES
+// ══════════════════════════════════════════════
+function renderCancion(body, p, pct, diffLabel, diffClass) {
+  const pts = PUNTOS[p.nivel];
+  let reproducido = 0;
+  const maxReps = p.repetible ? 3 : 1;
+  
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="audio-player pop">
+      <div class="audio-note">🎵</div>
+      <span class="question-difficulty ${diffClass[p.nivel]}">${diffLabel[p.nivel]}</span>
+      <div style="margin:12px 0">
+        <button class="play-btn" id="play-btn" onclick="playAudio('${p.archivo}')">▶</button>
+      </div>
+      <div class="audio-hint" id="audio-hint">Toca para escuchar · ${maxReps === 1 ? '1 reproducción' : `Hasta ${maxReps} reproducciones`}</div>
+    </div>
+    <div style="text-align:center;margin-bottom:12px;font-size:13px;color:var(--muted)">¿Qué canción es?</div>
+    <div class="options-grid">
+      ${p.ops.map((op, i) => `
+        <button class="option-btn" id="cancion-opt-${i}" onclick="responderCancion(${i}, ${p.r}, ${pts})">
+          <span class="option-letter">${'ABCD'[i]}</span>${op}
+        </button>`).join('')}
+    </div>`;
+  
+  // Guardar estado de reproducciones
+  body.dataset.reps = '0';
+  body.dataset.maxReps = maxReps;
+}
+
+function playAudio(archivo) {
+  const body = document.getElementById('mj-body');
+  const reps = parseInt(body.dataset.reps || '0');
+  const maxReps = parseInt(body.dataset.maxReps || '1');
+  
+  if (reps >= maxReps) { showToast('Sin más reproducciones'); return; }
+  
+  if (audioActual) { audioActual.pause(); audioActual.currentTime = 0; }
+  
+  audioActual = new Audio(`audio/${archivo}`);
+  audioActual.play().catch(() => showToast('Error al reproducir'));
+  
+  const btn = document.getElementById('play-btn');
+  btn.textContent = '⏸';
+  btn.disabled = true;
+  
+  const nuevasReps = reps + 1;
+  body.dataset.reps = nuevasReps;
+  
+  const hint = document.getElementById('audio-hint');
+  if (hint) hint.textContent = `Reproducción ${nuevasReps}/${maxReps}`;
+  
+  audioActual.onended = () => {
+    btn.textContent = '▶';
+    btn.disabled = nuevasReps >= maxReps;
+    if (nuevasReps >= maxReps && hint) hint.textContent = 'Sin más reproducciones';
+  };
+}
+
+function responderCancion(idx, correcta, pts) {
+  if (audioActual) { audioActual.pause(); }
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+  
+  const esCorrecta = idx === correcta;
+  btns[idx].classList.add(esCorrecta ? 'correct' : 'wrong');
+  if (!esCorrecta) btns[correcta].classList.add('correct');
+
+  if (esCorrecta) puntuacionMinijuego += pts;
+  setTimeout(() => siguientePregunta(), 1200);
+}
+
+// ══════════════════════════════════════════════
+// FOTOS
+// ══════════════════════════════════════════════
+let fotoIntentoActual = 0;
+const FOTO_BLUR = [20, 12, 6, 0];
+const FOTO_PUNTOS_INTENTO = [1000, 700, 400, 150];
+
+function renderFoto(body, p, pct, diffLabel, diffClass) {
+  fotoIntentoActual = 0;
+
+  const opts = NOMBRES_GRUPO.map(n => `<option value="${n}">${n}</option>`).join('');
+
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div style="text-align:center;margin-bottom:8px">
+      <span class="question-difficulty ${diffClass[p.nivel]}">${diffLabel[p.nivel]}</span>
+    </div>
+    <div class="foto-intentos" id="foto-intentos">
+      ${[0,1,2,3].map(i => `<div class="intento-dot ${i === 0 ? 'active' : ''}"></div>`).join('')}
+    </div>
+    <div class="foto-container pop">
+      <img id="foto-img" src="fotos/${p.archivo}" style="filter:blur(${FOTO_BLUR[0]}px);width:100%;height:100%;object-fit:cover" />
+    </div>
+    <div style="text-align:center;margin-bottom:12px;font-size:13px;color:var(--muted)">¿Quién es? · +${FOTO_PUNTOS_INTENTO[0]} pts ahora</div>
+    <div class="selector-wrap flex-col" style="gap:10px">
+      <select id="foto-select">
+        <option value="">Selecciona una persona...</option>
+        ${opts}
+      </select>
+      <div style="display:flex;gap:10px;width:100%;max-width:340px">
+        <button class="btn btn-primary" style="flex:1" onclick="responderFoto('${p.nombre}')">Confirmar</button>
+        <button class="btn btn-skip" style="width:auto;padding:12px 20px" onclick="skipFoto('${p.nombre}')">Skip</button>
+      </div>
+    </div>`;
+}
+
+function responderFoto(nombreCorrecto) {
+  const sel = document.getElementById('foto-select');
+  if (!sel.value) { showToast('Selecciona alguien primero'); return; }
+  
+  if (sel.value === nombreCorrecto) {
+    // Correcto!
+    const pts = FOTO_PUNTOS_INTENTO[fotoIntentoActual];
+    puntuacionMinijuego += pts;
+    document.getElementById('foto-img').style.filter = 'blur(0px)';
+    showToast(`✅ ¡Correcto! +${pts} puntos`);
+    setTimeout(() => siguientePregunta(), 1500);
+  } else {
+    fotoIntentoActual++;
+    if (fotoIntentoActual >= 4) {
+      // Sin más intentos
+      document.getElementById('foto-img').style.filter = 'blur(0px)';
+      showToast(`❌ Era ${nombreCorrecto}. +0 puntos`);
+      setTimeout(() => siguientePregunta(), 2000);
+      return;
+    }
+    // Siguiente intento - menos blur
+    document.getElementById('foto-img').style.filter = `blur(${FOTO_BLUR[fotoIntentoActual]}px)`;
+    
+    // Actualizar dots
+    const dots = document.querySelectorAll('.intento-dot');
+    dots.forEach((d, i) => {
+      d.className = 'intento-dot';
+      if (i < fotoIntentoActual) d.classList.add('used');
+      else if (i === fotoIntentoActual) d.classList.add('active');
+    });
+
+    const pts = FOTO_PUNTOS_INTENTO[fotoIntentoActual];
+    const hint = document.querySelector('.selector-wrap').previousElementSibling;
+    if (hint) hint.textContent = `¿Quién es? · +${pts} pts ahora`;
+    
+    showToast(`❌ Incorrecto, sigue intentando`);
+    sel.value = '';
+  }
+}
+
+function skipFoto(nombreCorrecto) {
+  fotoIntentoActual++;
+  if (fotoIntentoActual >= 4) {
+    document.getElementById('foto-img').style.filter = 'blur(0px)';
+    showToast(`Era ${nombreCorrecto}`);
+    setTimeout(() => siguientePregunta(), 2000);
+    return;
+  }
+  document.getElementById('foto-img').style.filter = `blur(${FOTO_BLUR[fotoIntentoActual]}px)`;
+  const dots = document.querySelectorAll('.intento-dot');
+  dots.forEach((d, i) => {
+    d.className = 'intento-dot';
+    if (i < fotoIntentoActual) d.classList.add('used');
+    else if (i === fotoIntentoActual) d.classList.add('active');
+  });
+  const pts = FOTO_PUNTOS_INTENTO[fotoIntentoActual];
+  const hint = document.querySelector('.selector-wrap').previousElementSibling;
+  if (hint) hint.textContent = `¿Quién es? · +${pts} pts ahora`;
+}
+
+// ══════════════════════════════════════════════
+// FRASES / WORDLE
+// ══════════════════════════════════════════════
+let wordleState = {};
+
+function renderFrase(body, p, pct, diffLabel, diffClass) {
+  const palabra = p.respuesta.replace(/\s/g, '');
+  const maxIntentos = 6;
+  wordleState = {
+    palabra,
+    respuestaOriginal: p.respuesta,
+    intentoActual: 0,
+    intentos: [],
+    letrasConocidas: {},
+    completado: false,
+    pts: PUNTOS[p.nivel],
+    pista: p.pista,
+  };
+
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="frase-display pop">
+      <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">${p.quien} dice...</div>
+      <span class="question-difficulty ${diffClass[p.nivel]}" style="margin-bottom:12px;display:inline-block">${diffLabel[p.nivel]}</span>
+      <div style="font-size:17px;font-weight:600;color:var(--text);font-style:normal;line-height:1.6">"${formatFrase(p.frase, p.pista, p.respuesta)}"</div>
+    </div>
+    <div class="wordle-grid" id="wordle-grid">${buildWordleGrid(palabra.length, maxIntentos)}</div>
+    <div class="keyboard" id="wordle-keyboard">${buildKeyboard()}</div>
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn btn-skip" style="width:auto;padding:10px 20px;max-width:200px" onclick="skipFrase()">Skip</button>
+    </div>`;
+}
+
+function formatFrase(frase, pista, respuesta) {
+  const palabras = respuesta.split(' ');
+  let blanks = palabras.map((p, i) => {
+    if (i < pista) return `<span style="color:var(--accent3);font-weight:900">${p}</span>`;
+    return `<span class="blank">${'_'.repeat(p.length)}</span>`;
+  }).join(' ');
+  
+  return frase.replace(/___/g, blanks);
+}
+
+function buildWordleGrid(len, maxIntentos) {
+  const cols = Math.min(len, 10);
+  let html = '';
+  for (let i = 0; i < maxIntentos; i++) {
+    html += '<div class="wordle-row">';
+    for (let j = 0; j < cols; j++) {
+      html += `<div class="wordle-cell" id="cell-${i}-${j}"></div>`;
+    }
+    html += '</div>';
+  }
+  return html;
+}
+
+function buildKeyboard() {
+  const rows = [
+    ['Q','W','E','R','T','Y','U','I','O','P'],
+    ['A','S','D','F','G','H','J','K','L','Ñ'],
+    ['ENTER','Z','X','C','V','B','N','M','⌫']
+  ];
+  return rows.map(row => `
+    <div class="keyboard-row">
+      ${row.map(k => `<button class="key ${k.length > 1 ? 'wide' : ''}" id="key-${k}" onclick="presionarTecla('${k}')">${k}</button>`).join('')}
+    </div>`).join('');
+}
+
+let currentInput = '';
+
+function presionarTecla(key) {
+  if (wordleState.completado) return;
+  const len = wordleState.palabra.length;
+  const cols = Math.min(len, 10);
+  
+  if (key === '⌫') {
+    if (currentInput.length > 0) {
+      currentInput = currentInput.slice(0, -1);
+      const cell = document.getElementById(`cell-${wordleState.intentoActual}-${currentInput.length}`);
+      if (cell) cell.textContent = '';
+    }
+  } else if (key === 'ENTER') {
+    if (currentInput.length < cols) { showToast('Faltan letras'); return; }
+    evaluarIntento();
+  } else {
+    if (currentInput.length < cols) {
+      const cell = document.getElementById(`cell-${wordleState.intentoActual}-${currentInput.length}`);
+      if (cell) { cell.textContent = key; cell.classList.add('active'); }
+      currentInput += key;
+    }
+  }
+}
+
+function evaluarIntento() {
+  const intento = currentInput;
+  const palabra = wordleState.palabra;
+  const cols = Math.min(palabra.length, 10);
+  const row = wordleState.intentoActual;
+
+  const resultado = Array(cols).fill('absent');
+  const palabraArr = [...palabra.toUpperCase()];
+  const intentoArr = [...intento];
+  const usados = Array(cols).fill(false);
+
+  // Primero correctos
+  for (let i = 0; i < cols; i++) {
+    if (intentoArr[i] === palabraArr[i]) {
+      resultado[i] = 'correct';
+      usados[i] = true;
+    }
+  }
+  // Luego presentes
+  for (let i = 0; i < cols; i++) {
+    if (resultado[i] === 'correct') continue;
+    for (let j = 0; j < cols; j++) {
+      if (!usados[j] && intentoArr[i] === palabraArr[j]) {
+        resultado[i] = 'present';
+        usados[j] = true;
+        break;
+      }
+    }
+  }
+
+  // Renderizar
+  for (let i = 0; i < cols; i++) {
+    const cell = document.getElementById(`cell-${row}-${i}`);
+    if (cell) {
+      cell.classList.remove('active');
+      cell.classList.add(resultado[i]);
+    }
+    // Actualizar teclado
+    const keyEl = document.getElementById(`key-${intento[i]}`);
+    if (keyEl) {
+      const cur = keyEl.className;
+      if (!cur.includes('correct')) {
+        if (resultado[i] === 'correct') keyEl.className = keyEl.className.replace(/present|absent/g, '') + ' correct';
+        else if (resultado[i] === 'present' && !cur.includes('present')) keyEl.className += ' present';
+        else if (resultado[i] === 'absent' && !cur.includes('present') && !cur.includes('correct')) keyEl.className += ' absent';
+      }
+    }
+  }
+
+  wordleState.intentoActual++;
+  currentInput = '';
+
+  const esCorrecta = resultado.every(r => r === 'correct');
+  if (esCorrecta) {
+    const pts = Math.round(wordleState.pts * (1 - (wordleState.intentoActual - 1) * 0.15));
+    puntuacionMinijuego += Math.max(pts, 50);
+    wordleState.completado = true;
+    showToast(`✅ ¡Correcto! +${Math.max(pts, 50)} pts`);
+    setTimeout(() => siguientePregunta(), 1500);
+  } else if (wordleState.intentoActual >= 6) {
+    wordleState.completado = true;
+    showToast(`❌ Era "${wordleState.respuestaOriginal}"`);
+    setTimeout(() => siguientePregunta(), 2000);
+  }
+}
+
+function skipFrase() {
+  wordleState.completado = true;
+  showToast(`Era "${wordleState.respuestaOriginal}"`);
+  setTimeout(() => siguientePregunta(), 1500);
+}
+
+// ══════════════════════════════════════════════
+// FLUJO
+// ══════════════════════════════════════════════
+function siguientePregunta() {
+  currentInput = '';
+  if (audioActual) { audioActual.pause(); audioActual = null; }
+  
+  preguntaIdx++;
+  if (preguntaIdx >= preguntasActuales.length) {
+    finalizarMinijuego();
+  } else {
+    renderPregunta();
+  }
+}
+
+async function finalizarMinijuego() {
+  await upsertScore(jugadorActual, minijuegoActivo, puntuacionMinijuego);
+  misScores[minijuegoActivo] = puntuacionMinijuego;
+  
+  // Comprobar si todos completados
+  const todosCompletos = MINIJUEGOS_CONFIG.every(m => misScores[m.id] !== undefined);
+  
+  showCompletadoMinijuego(puntuacionMinijuego, todosCompletos);
+}
+
+function showCompletadoMinijuego(pts, todosCompletos) {
+  const body = document.getElementById('mj-body');
+  body.innerHTML = `
+    <div class="completado-overlay pop">
+      <div class="completado-emoji">🎉</div>
+      <div class="completado-title">¡Completado!</div>
+      <div class="score-label">Puntuación obtenida</div>
+      <div class="completado-score">${pts}</div>
+      <div style="color:var(--muted);font-size:14px;margin:16px 0">Puntuación guardada</div>
+      ${todosCompletos ? '<button class="btn btn-primary" style="margin-top:8px" onclick="showFinal()">Ver clasificación final 🏆</button>' : '<button class="btn btn-secondary" style="margin-top:8px" onclick="volverLobby()">Volver al lobby</button>'}
+    </div>`;
+  
+  lanzarConfetti();
+}
+
+function showCompletado(id) {
+  const config = MINIJUEGOS_CONFIG.find(m => m.id === id);
+  document.getElementById('mj-titulo').textContent = `${config.emoji} ${config.nombre}`;
+  document.getElementById('mj-pregunta-num').textContent = '';
+  const body = document.getElementById('mj-body');
+  body.innerHTML = `
+    <div class="completado-overlay">
+      <div class="completado-emoji">✅</div>
+      <div class="completado-title">Ya jugado</div>
+      <div class="score-label">Tu puntuación</div>
+      <div class="completado-score">${misScores[id]}</div>
+      <button class="btn btn-secondary" style="margin-top:24px" onclick="volverLobby()">Volver al lobby</button>
+    </div>`;
+  showScreen('minijuego');
+}
+
+async function showFinal() {
+  await actualizarRanking();
+  
+  const ganador = rankingData[0];
+  const wCard = document.getElementById('winner-card');
+  if (ganador) {
+    const detalles = MINIJUEGOS_CONFIG.map(m => {
+      const sc = ganador.scores[m.id];
+      return `${m.emoji} ${m.nombre}: <strong>${sc ?? '—'}</strong>`;
+    }).join('<br>');
+    wCard.innerHTML = `
+      <div class="winner-emoji">🥇</div>
+      <div class="winner-name">${ganador.nombre}</div>
+      <div class="winner-score">Media: <span>${ganador.media}</span></div>
+      <div style="font-size:13px;color:var(--muted);margin-top:12px;line-height:2">${detalles}</div>`;
+  }
+
+  const fList = document.getElementById('final-ranking-list');
+  const medals = ['🥇','🥈','🥉'];
+  fList.innerHTML = rankingData.map((p, i) => `
+    <div class="ranking-item ${p.nombre === jugadorActual ? 'me' : ''}">
+      <div class="rank-pos">${medals[i] || (i+1)}</div>
+      <div class="rank-info">
+        <div class="rank-name">${p.nombre}${p.nombre === jugadorActual ? ' (tú)' : ''}</div>
+        <div class="rank-details">${MINIJUEGOS_CONFIG.map(m => `${m.emoji}${p.scores[m.id] ?? '—'}`).join(' ')}</div>
+      </div>
+      <div class="rank-score">${p.media}</div>
+    </div>`).join('');
+
+  showScreen('final');
+  lanzarConfetti();
+}
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function lanzarConfetti() {
+  const colores = ['#ff3d6b','#7c3aed','#00d4ff','#ffd700','#00e676'];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.cssText = `
+        left:${Math.random()*100}vw;
+        background:${colores[Math.floor(Math.random()*colores.length)]};
+        animation-duration:${1.5+Math.random()*2}s;
+        animation-delay:${Math.random()*0.5}s;
+        width:${6+Math.random()*8}px;
+        height:${6+Math.random()*8}px;
+        border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }, i * 30);
+  }
+}
+</script>
+</body>
+</html>
