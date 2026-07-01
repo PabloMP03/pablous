@@ -78,7 +78,7 @@
     .input-wrap { width: 100%; max-width: 320px; }
 
     /* ── ADMIN PASSWORD ── */
-    #screen-admin-pass {
+    #screen-pass {
       background: radial-gradient(ellipse at top, #1a0a2e 0%, var(--bg) 60%);
     }
     .admin-pass-card {
@@ -723,23 +723,33 @@
   </div>
 </div>
 
-<!-- ══════════════ PANTALLA CONTRASEÑA ADMIN ══════════════ -->
-<div id="screen-admin-pass" class="screen">
-  <div class="admin-pass-card pop" id="admin-pass-card">
+<!-- ══════════════ PANTALLA CONTRASEÑA ══════════════ -->
+<div id="screen-pass" class="screen">
+  <div class="admin-pass-card pop" id="pass-card">
     <div class="admin-pass-emoji">🔐</div>
-    <div class="admin-pass-title">Acceso Admin</div>
-    <div class="admin-pass-desc">Este perfil está protegido. Introduce la contraseña para continuar.</div>
+    <div class="admin-pass-title" id="pass-title">Acceso</div>
+    <div class="admin-pass-desc" id="pass-desc">Introduce tu contraseña.</div>
     <input
       type="password"
-      id="admin-pass-input"
+      id="pass-input"
       class="admin-pass-input"
       placeholder="Contraseña"
       autocomplete="off"
-      onkeydown="if(event.key==='Enter') confirmarAdminPass()"
+      onkeydown="if(event.key==='Enter') confirmarPass()"
     />
+    <div id="pass-input2-wrap" style="display:none">
+      <input
+        type="password"
+        id="pass-input2"
+        class="admin-pass-input"
+        placeholder="Repite la contraseña"
+        autocomplete="off"
+        onkeydown="if(event.key==='Enter') confirmarPass()"
+      />
+    </div>
     <div class="admin-pass-actions">
-      <button class="btn btn-secondary" onclick="cancelarAdminPass()">Cancelar</button>
-      <button class="btn btn-primary" id="admin-pass-btn" onclick="confirmarAdminPass()">Entrar</button>
+      <button class="btn btn-secondary" onclick="cancelarPass()">Cancelar</button>
+      <button class="btn btn-primary" id="pass-btn" onclick="confirmarPass()">Entrar</button>
     </div>
   </div>
 </div>
@@ -942,12 +952,6 @@ const ADMIN = "Pablo";
 // ⚠️ Perfiles de prueba: vacío en la versión final
 const TESTERS = [];
 function esPrueba(nombre) { return nombre === ADMIN || TESTERS.includes(nombre); }
-let deviceId = localStorage.getItem("deviceId");
-
-if (!deviceId) {
-    deviceId = crypto.randomUUID();
-    localStorage.setItem("deviceId", deviceId);
-}
 let misScores = {};
 let rankingData = [];
 let realtimeChannel = null;
@@ -983,28 +987,25 @@ async function getScores() {
   return await sbFetch('scores?select=*&order=completado_at.desc') || [];
 }
 
-async function getDevice() {
-    const res = await sbFetch(
-        `devices?device_id=eq.${encodeURIComponent(deviceId)}&select=*`
-    );
-    return res && res.length ? res[0] : null;
+// ── Perfiles con contraseña (vía RPC en Supabase) ──
+async function profileExists(nombre) {
+    return await sbFetch('rpc/profile_exists', {
+        method: 'POST',
+        body: JSON.stringify({ p_name: nombre })
+    });
 }
 
-// Comprueba si un nombre de jugador ya está registrado en OTRO dispositivo
-async function getDeviceByPlayer(playerName) {
-    const res = await sbFetch(
-        `devices?player_name=eq.${encodeURIComponent(playerName)}&select=*`
-    );
-    return res && res.length ? res[0] : null;
+async function registerProfile(nombre, password) {
+    return await sbFetch('rpc/register_profile', {
+        method: 'POST',
+        body: JSON.stringify({ p_name: nombre, p_password: password })
+    });
 }
 
-async function registerDevice(playerName) {
-    return await sbFetch("devices", {
-        method: "POST",
-        body: JSON.stringify({
-            device_id: deviceId,
-            player_name: playerName
-        })
+async function checkProfilePassword(nombre, password) {
+    return await sbFetch('rpc/check_profile_password', {
+        method: 'POST',
+        body: JSON.stringify({ p_name: nombre, p_password: password })
     });
 }
 
@@ -1247,44 +1248,122 @@ async function entrar() {
         return;
     }
 
-    // Perfil de Pablo: pedir contraseña antes de nada
+    // El admin (Pablo) tiene su propia contraseña fija (función check_admin_password)
     if (nombre === ADMIN) {
-        pendingAdminEntry = true;
-        showScreen('admin-pass');
-        const input = document.getElementById('admin-pass-input');
-        input.value = '';
-        setTimeout(() => input.focus(), 100);
+        abrirPantallaPass(nombre, 'admin');
         return;
     }
 
-    // Perfiles de prueba (testers) entran sin bloqueo de dispositivo
-    if (!esPrueba(nombre)) {
-        try {
-            const miDispositivo = await getDevice();
-
-            if (miDispositivo) {
-                // Este dispositivo ya tiene un perfil asignado
-                if (miDispositivo.player_name !== nombre) {
-                    showToast(`⚠️ Este dispositivo ya pertenece a ${miDispositivo.player_name}`);
-                    return;
-                }
-            } else {
-                // Este dispositivo aún no tiene perfil: comprobar que el nombre
-                // elegido no esté ya cogido por OTRO dispositivo
-                const dueño = await getDeviceByPlayer(nombre);
-                if (dueño && dueño.device_id !== deviceId) {
-                    showToast(`⚠️ ${nombre} ya está jugando desde otro dispositivo`);
-                    return;
-                }
-                await registerDevice(nombre);
-            }
-        } catch (err) {
-            console.error('Error comprobando dispositivo:', err);
-            // fail-open: si Supabase falla, dejamos entrar igualmente para no cortar la fiesta
-        }
+    // Resto de perfiles: contraseña propia. Si es su primera vez, la crean.
+    let existe;
+    try {
+        existe = await profileExists(nombre);
+    } catch (err) {
+        console.error('Error comprobando perfil:', err);
+        showToast('⚠️ Error de conexión, inténtalo de nuevo');
+        return;
     }
 
-    await completarEntrada(nombre);
+    abrirPantallaPass(nombre, existe ? 'login' : 'registro');
+}
+
+// ── Pantalla de contraseña unificada ──
+// modo: 'admin' (contraseña fija de Pablo) | 'login' (verificar) | 'registro' (crear 1ª vez)
+let passMode = 'login';
+let passNombre = '';
+
+function abrirPantallaPass(nombre, modo) {
+    passNombre = nombre;
+    passMode = modo;
+
+    const titulo = document.getElementById('pass-title');
+    const desc = document.getElementById('pass-desc');
+    const btn = document.getElementById('pass-btn');
+    const input = document.getElementById('pass-input');
+    const input2wrap = document.getElementById('pass-input2-wrap');
+
+    input.value = '';
+    document.getElementById('pass-input2').value = '';
+
+    if (modo === 'admin') {
+        titulo.textContent = '🔐 Acceso Admin';
+        desc.textContent = 'Perfil protegido. Introduce la contraseña de administrador.';
+        btn.textContent = 'Entrar';
+        input2wrap.style.display = 'none';
+    } else if (modo === 'login') {
+        titulo.textContent = `👋 Hola, ${nombre}`;
+        desc.textContent = 'Introduce tu contraseña para entrar a tu perfil.';
+        btn.textContent = 'Entrar';
+        input2wrap.style.display = 'none';
+    } else { // registro
+        titulo.textContent = `✨ Bienvenido, ${nombre}`;
+        desc.textContent = 'Es tu primera vez. Crea una contraseña para proteger tu perfil (la necesitarás para volver a entrar).';
+        btn.textContent = 'Crear y entrar';
+        input2wrap.style.display = 'block';
+    }
+
+    showScreen('pass');
+    setTimeout(() => input.focus(), 100);
+}
+
+async function confirmarPass() {
+    const input = document.getElementById('pass-input');
+    const input2 = document.getElementById('pass-input2');
+    const btn = document.getElementById('pass-btn');
+    const valor = input.value;
+
+    if (!valor) { showToast('Escribe una contraseña'); return; }
+
+    // En registro, validar que las dos contraseñas coincidan
+    if (passMode === 'registro') {
+        if (valor.length < 3) { showToast('Mínimo 3 caracteres'); return; }
+        if (valor !== input2.value) { shakePassCard(); showToast('❌ Las contraseñas no coinciden'); return; }
+    }
+
+    btn.disabled = true;
+    const txtOriginal = btn.textContent;
+    btn.textContent = 'Comprobando...';
+
+    try {
+        if (passMode === 'admin') {
+            const ok = await checkAdminPasswordRemote(valor);
+            if (ok === true) return completarEntrada(ADMIN);
+            falloPass('❌ Contraseña incorrecta');
+        } else if (passMode === 'login') {
+            const ok = await checkProfilePassword(passNombre, valor);
+            if (ok === true) return completarEntrada(passNombre);
+            falloPass('❌ Contraseña incorrecta');
+        } else { // registro
+            const ok = await registerProfile(passNombre, valor);
+            if (ok === true) return completarEntrada(passNombre);
+            // Si devuelve false, alguien lo registró entre medias
+            falloPass('⚠️ Ese perfil ya tiene contraseña, entra con ella');
+            passMode = 'login';
+            document.getElementById('pass-input2-wrap').style.display = 'none';
+            document.getElementById('pass-desc').textContent = 'Introduce tu contraseña para entrar a tu perfil.';
+        }
+    } catch (err) {
+        console.error('Error con la contraseña:', err);
+        showToast('⚠️ Error de conexión, inténtalo de nuevo');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = txtOriginal;
+    }
+}
+
+function falloPass(msg) {
+    shakePassCard();
+    showToast(msg);
+    document.getElementById('pass-input').value = '';
+    document.getElementById('pass-input2').value = '';
+    document.getElementById('pass-input').focus();
+}
+
+function shakePassCard() {
+    const card = document.getElementById('pass-card');
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
 }
 
 async function completarEntrada(nombre) {
@@ -1295,10 +1374,7 @@ async function completarEntrada(nombre) {
     initRealtime();
 }
 
-let pendingAdminEntry = false;
-
-// La contraseña se verifica en Supabase (función check_admin_password),
-// nunca se compara ni se guarda en texto plano aquí en el cliente.
+// La contraseña del admin se verifica en Supabase (función check_admin_password)
 async function checkAdminPasswordRemote(pwd) {
   return await sbFetch('rpc/check_admin_password', {
     method: 'POST',
@@ -1306,47 +1382,9 @@ async function checkAdminPasswordRemote(pwd) {
   });
 }
 
-async function confirmarAdminPass() {
-    const input = document.getElementById('admin-pass-input');
-    const btn = document.getElementById('admin-pass-btn');
-    const valor = input.value;
-
-    if (!valor) { showToast('Escribe la contraseña'); return; }
-
-    btn.disabled = true;
-    btn.textContent = 'Comprobando...';
-
-    let esCorrecta = false;
-    try {
-        esCorrecta = await checkAdminPasswordRemote(valor);
-    } catch (err) {
-        console.error('Error verificando contraseña:', err);
-        showToast('⚠️ Error de conexión, inténtalo de nuevo');
-        btn.disabled = false;
-        btn.textContent = 'Entrar';
-        return;
-    }
-
-    btn.disabled = false;
-    btn.textContent = 'Entrar';
-
-    if (esCorrecta === true) {
-        pendingAdminEntry = false;
-        completarEntrada(ADMIN);
-    } else {
-        const card = document.getElementById('admin-pass-card');
-        card.classList.remove('shake');
-        void card.offsetWidth; // reiniciar animación
-        card.classList.add('shake');
-        showToast('❌ Contraseña incorrecta');
-        input.value = '';
-        input.focus();
-    }
-}
-
-function cancelarAdminPass() {
-    pendingAdminEntry = false;
-    document.getElementById('admin-pass-input').value = '';
+function cancelarPass() {
+    document.getElementById('pass-input').value = '';
+    document.getElementById('pass-input2').value = '';
     showScreen('inicio');
 }
 
@@ -1653,17 +1691,38 @@ function responderVideo(idx, correcta, pts) {
 
   if (esCorrecta) puntuacionMinijuego += pts;
 
-  const playBtn = document.getElementById('video-play-btn');
-  if (playBtn) playBtn.classList.add('hidden');
   const hint = document.getElementById('video-hint');
-  if (hint) hint.textContent = '👀 Así sigue...';
+  if (hint) hint.textContent = '👀 Esto es lo que pasó';
 
-  // Reanuda el vídeo desde donde se cortó para enseñar qué pasó después
+  // Reproduce el vídeo ENTERO desde el principio, sin corte
   if (video) {
+    video.currentTime = 0;
     video.play().catch(() => {});
+    // Al terminar, muestra el botón para volver a verlo entero
+    video.onended = () => {
+      const rvBtn = document.getElementById('video-play-btn');
+      if (rvBtn) rvBtn.classList.remove('hidden');
+    };
   }
 
-  setTimeout(() => siguientePregunta(), 2800);
+  // Botón de play -> ahora reinicia el vídeo completo (sin límite de reproducciones)
+  const playBtn = document.getElementById('video-play-btn');
+  if (playBtn) {
+    playBtn.classList.add('hidden');
+    playBtn.disabled = false;
+    playBtn.onclick = () => {
+      if (!video) return;
+      video.currentTime = 0;
+      video.play().catch(() => {});
+      playBtn.classList.add('hidden');
+    };
+  }
+
+  // Botón "Siguiente" para pasar cuando quiera el jugador
+  const cont = document.createElement('div');
+  cont.style.cssText = 'margin-top:16px;text-align:center';
+  cont.innerHTML = `<button class="btn btn-primary" style="max-width:340px" onclick="siguientePregunta()">Siguiente →</button>`;
+  body.appendChild(cont);
 }
 
 // ══════════════════════════════════════════════
