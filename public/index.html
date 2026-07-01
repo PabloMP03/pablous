@@ -190,6 +190,12 @@
     }
     .lobby-player span { color: var(--text); font-weight: 700; }
 
+    .premio-card {
+      background: linear-gradient(135deg, rgba(255,215,0,0.10), rgba(255,107,53,0.10)) !important;
+      border-color: rgba(255,215,0,0.4) !important;
+    }
+    .premio-card .minijuego-name { color: var(--gold); }
+
     .minijuegos-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -389,6 +395,40 @@
     }
     .play-btn:hover { transform: scale(1.1); }
     .play-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── VIDEO ── */
+    .video-player {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 280px;
+      margin: 14px auto 0;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+      aspect-ratio: 9/16;
+    }
+    .video-wrap video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .video-play-btn {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      margin: 0;
+      z-index: 2;
+    }
+    .video-play-btn.hidden { display: none; }
 
     /* ── FOTOS ── */
     .foto-container {
@@ -652,7 +692,7 @@
     <div class="logo">PabloUs</div>
     <div class="logo-sub">El juego del cumple 🎂</div>
   </div>
-  <p class="inicio-desc">4 minijuegos para demostrar que conoces a Pablo mejor que nadie</p>
+  <p class="inicio-desc">5 minijuegos para demostrar que conoces a Pablo mejor que nadie</p>
   <div class="input-wrap flex-col" style="gap:16px">
     <div style="width:100%">
       <label class="input-label">¿Quién eres?</label>
@@ -758,14 +798,16 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 // Zona horaria España (Europe/Madrid)
 const UNLOCK_DATES = {
-  canciones: new Date('2026-07-04T00:00:00+02:00'),
-  fotos:     new Date('2026-07-11T00:00:00+02:00'),
-  frases:    new Date('2026-07-11T00:00:00+02:00'),
+  canciones: new Date('2026-07-01T00:00:00+02:00'),
+  video:     new Date('2026-07-05T00:00:00+02:00'),
+  fotos:     new Date('2026-07-09T00:00:00+02:00'),
+  frases:    new Date('2026-07-13T00:00:00+02:00'),
   trivia:    new Date('2026-07-18T00:00:00+02:00'),
 };
 
 const MINIJUEGOS_CONFIG = [
   { id: 'canciones', emoji: '🎵', nombre: 'Adivina la canción' },
+  { id: 'video',     emoji: '🎬', nombre: '¿Qué pasó después?' },
   { id: 'fotos',     emoji: '📸', nombre: 'Adivina la foto'    },
   { id: 'frases',    emoji: '💬', nombre: 'Completa la frase'  },
   { id: 'trivia',    emoji: '🧠', nombre: 'Trivia'             },
@@ -816,6 +858,25 @@ const CANCIONES = {
     { titulo: 'En el castillo', artista: 'Anuel AA', archivo: 'EnElCastillo-5Sec.mp3', repetible: false, ops: ['En el castillo','Bebe','Nos Comemos Vivos','Sola'], r: 0 },
     { titulo: 'Mi Error', artista: 'Eladio Carrión & Zion', archivo: 'MiError-5Sec.mp3', repetible: false, ops: ['Mi Error','Pa\' Mí','Saturno','10,000 Horas'], r: 0 },
     { titulo: 'Celine', artista: 'Kidd Keo & Ghost Killer Track', archivo: 'Celine-5Sec.mp3', repetible: false, ops: ['Glock','Celine','Badman','Trapboy'], r: 1 },
+  ],
+};
+
+// ── VIDEOS DATA ("¿Qué pasó después?") ──
+// Sin niveles de dificultad "reales", pero cada partida coge 1 vídeo de cada
+// tramo de puntos (400 / 600 / 800) para que sea justo entre jugadores.
+// repetible/maxReps: cuántas veces se puede volver a ver el clip
+const VIDEOS = {
+  400: [
+    { archivo: 'Dale_-_7Sec.mp4', puntos: 400, repetible: true, ops: ['Le posee el demonio a Ibra','Vomita delante de todos','Se cae para alante','Se le cae la copa'], r: 0 },
+    { archivo: 'Q_rico_-_4_Sec.mp4', puntos: 400, repetible: true, ops: ['Lasañita está quemada','Lasañita se cae al suelo','Lasañita está congelada','Se le cae el móvil a Roro'], r: 1 },
+  ],
+  600: [
+    { archivo: 'Los_prohibidos_-_4Sec.mp4', puntos: 600, repetible: true, ops: ['Se pone a hacer el moonwalk','Se pone a follarse el suelo','Intenta hacer otra flexión y se come el suelo','Se pone a besarse con el teléfono'], r: 1 },
+    { archivo: 'Contrataque_de_Andres_-_10Sec.mp4', puntos: 600, repetible: true, ops: ['Andrés hace un amago de hacerle una felación a Sergio','A Andrés le posee el espíritu de una rana','Andrés intenta hacer el tripaloski y se cae de boca','Llama a la puerta una mujer enfadada por el ruido'], r: 1 },
+  ],
+  800: [
+    { archivo: 'Pueblerino_-_3Sec.mp4', puntos: 800, repetible: false, ops: ['Aparece un jabalí y echan a correr','Escena romántica de Collado y Claudio','Collado intenta ayudar a Sergio en estado comatoso','Collado y Sergio están agarrados de la mano mirando las estrellas'], r: 2 },
+    { archivo: 'Quemazon_-_5Sec.mp4', puntos: 800, repetible: false, ops: ['Andrés vomita por la cara','Roro intenta escupir y se le sale un moco','Sale Sergio bailando solo en mitad de la Alameda','Se le cae el cubata en lo alto a Dani'], r: 0 },
   ],
 };
 
@@ -894,6 +955,7 @@ let preguntasActuales = [];
 let preguntaIdx = 0;
 let puntuacionMinijuego = 0;
 let audioActual = null;
+let videoActual = null;
 
 // ══════════════════════════════════════════════
 // SUPABASE HELPERS
@@ -1034,7 +1096,7 @@ function renderRanking() {
         <div class="rank-pos ${posClass}">${medals[i] || (i+1)}</div>
         <div class="rank-info">
           <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div>
-          <div class="rank-details">${details} · ${p.jugados}/4</div>
+          <div class="rank-details">${details} · ${p.jugados}/${MINIJUEGOS_CONFIG.length}</div>
         </div>
         <div class="rank-score">${p.total}</div>
       </div>`;
@@ -1082,7 +1144,7 @@ function actualizarMinijuegosGrid() {
   const esAdmin = jugadorActual === ADMIN;
   const modoPrueba = esPrueba(jugadorActual);
 
-  grid.innerHTML = MINIJUEGOS_CONFIG.map(m => {
+  const cardsHtml = MINIJUEGOS_CONFIG.map(m => {
     const unlocked = isUnlocked(m.id);
     // En modo prueba (admin o tester) nunca hay minijuegos "completados": se pueden rejugar
     const done = !modoPrueba && misScores[m.id] !== undefined;
@@ -1110,6 +1172,36 @@ function actualizarMinijuegosGrid() {
         ${statusHtml}
       </div>`;
   }).join('');
+
+  grid.innerHTML = cardsHtml + buildPremioCard();
+}
+
+// 6ª tarjeta especial: no es un minijuego, no puntúa ni afecta al ranking.
+// Se desbloquea el mismo día que el Trivia (18 de julio, día de la fiesta).
+const PREMIO_UNLOCK_DATE = UNLOCK_DATES.trivia;
+
+function buildPremioCard() {
+  const unlocked = new Date() >= PREMIO_UNLOCK_DATE;
+
+  if (unlocked) {
+    return `
+      <div class="minijuego-card premio-card done">
+        <div class="minijuego-emoji">🎁</div>
+        <div class="minijuego-name">Premio al 1º</div>
+        <div class="minijuego-status">del ranking · por definir</div>
+      </div>`;
+  }
+
+  const cd = tiempoHasta(PREMIO_UNLOCK_DATE);
+  const fecha = PREMIO_UNLOCK_DATE.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+  return `
+    <div class="minijuego-card premio-card locked">
+      <div class="lock-icon">🔒</div>
+      <div class="minijuego-emoji">🎁</div>
+      <div class="minijuego-name">Premio al 1º</div>
+      <div class="unlock-date">Se revela el ${fecha}</div>
+      <div class="countdown" id="cd-premio">⏳ ${cd || ''}</div>
+    </div>`;
 }
 
 // Actualiza los contadores cada segundo; si algo se desbloquea, repinta la rejilla
@@ -1125,6 +1217,12 @@ function tickCountdowns() {
       else necesitaRepintar = true; // acaba de desbloquearse
     }
   });
+  const elPremio = document.getElementById('cd-premio');
+  if (elPremio) {
+    const t = tiempoHasta(PREMIO_UNLOCK_DATE);
+    if (t) elPremio.textContent = `⏳ ${t}`;
+    else necesitaRepintar = true;
+  }
   if (necesitaRepintar) actualizarMinijuegosGrid();
 }
 setInterval(tickCountdowns, 1000);
@@ -1253,6 +1351,7 @@ function cancelarAdminPass() {
 
 function volverLobby() {
   if (audioActual) { audioActual.pause(); audioActual = null; }
+  if (videoActual) { videoActual.pause(); videoActual = null; }
   showScreen('lobby');
   actualizarRanking();
 }
@@ -1303,6 +1402,14 @@ function seleccionarPreguntas(id) {
       const idx = Math.floor(Math.random() * pool.length);
       preguntas.push({ ...pool[idx], nivel, tipo: 'foto' });
     });
+  } else if (id === 'video') {
+    // Uno de cada tramo de puntos (400 / 600 / 800), así todos juegan con
+    // el mismo potencial máximo aunque les toquen vídeos distintos
+    [400, 600, 800].forEach(tramo => {
+      const pool = VIDEOS[tramo];
+      const idx = Math.floor(Math.random() * pool.length);
+      preguntas.push({ ...pool[idx], tipo: 'video' });
+    });
   } else if (id === 'frases') {
     nivelesOrden.forEach(nivel => {
       const pool = FRASES[nivel];
@@ -1328,6 +1435,7 @@ function renderPregunta() {
 
   if (p.tipo === 'trivia') renderTrivia(body, p, pct, diffLabel, diffClass);
   else if (p.tipo === 'cancion') renderCancion(body, p, pct, diffLabel, diffClass);
+  else if (p.tipo === 'video') renderVideo(body, p, pct, diffLabel, diffClass);
   else if (p.tipo === 'foto') renderFoto(body, p, pct, diffLabel, diffClass);
   else if (p.tipo === 'frase') renderFrase(body, p, pct, diffLabel, diffClass);
 }
@@ -1438,6 +1546,84 @@ function responderCancion(idx, correcta, pts) {
   const btns = document.querySelectorAll('.option-btn');
   btns.forEach(b => b.disabled = true);
   
+  const esCorrecta = idx === correcta;
+  btns[idx].classList.add(esCorrecta ? 'correct' : 'wrong');
+  if (!esCorrecta) btns[correcta].classList.add('correct');
+
+  if (esCorrecta) puntuacionMinijuego += pts;
+  setTimeout(() => siguientePregunta(), 1200);
+}
+
+// ══════════════════════════════════════════════
+// VIDEO ("¿Qué pasó después?")
+// ══════════════════════════════════════════════
+function renderVideo(body, p, pct, diffLabel, diffClass) {
+  const pts = p.puntos;
+  const maxReps = p.repetible ? 2 : 1;
+
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="video-player pop">
+      <div class="question-points" style="margin-bottom:4px">+${pts} puntos</div>
+      <div class="video-wrap">
+        <video id="video-el" src="videos/${p.archivo}" playsinline webkit-playsinline></video>
+        <button class="play-btn video-play-btn" id="video-play-btn" onclick="playVideo()">▶</button>
+      </div>
+      <div class="audio-hint" id="video-hint">Toca para ver el clip · ${maxReps === 1 ? '1 reproducción' : `Hasta ${maxReps} reproducciones`}</div>
+    </div>
+    <div style="text-align:center;margin:12px 0;font-size:13px;color:var(--muted)">¿Qué pasa después?</div>
+    <div class="options-grid">
+      ${p.ops.map((op, i) => `
+        <button class="option-btn" id="video-opt-${i}" onclick="responderVideo(${i}, ${p.r}, ${pts})">
+          <span class="option-letter">${'ABCD'[i]}</span>${op}
+        </button>`).join('')}
+    </div>`;
+
+  body.dataset.reps = '0';
+  body.dataset.maxReps = maxReps;
+}
+
+function playVideo() {
+  const body = document.getElementById('mj-body');
+  const reps = parseInt(body.dataset.reps || '0');
+  const maxReps = parseInt(body.dataset.maxReps || '1');
+
+  if (reps >= maxReps) { showToast('Sin más reproducciones'); return; }
+
+  const video = document.getElementById('video-el');
+  const btn = document.getElementById('video-play-btn');
+  if (!video) return;
+
+  video.currentTime = 0;
+  video.play().catch(() => showToast('Error al reproducir'));
+  videoActual = video;
+
+  btn.classList.add('hidden');
+
+  const nuevasReps = reps + 1;
+  body.dataset.reps = nuevasReps;
+
+  const hint = document.getElementById('video-hint');
+  if (hint) hint.textContent = `Reproducción ${nuevasReps}/${maxReps}`;
+
+  video.onended = () => {
+    btn.classList.remove('hidden');
+    btn.disabled = nuevasReps >= maxReps;
+    if (nuevasReps >= maxReps && hint) hint.textContent = 'Sin más reproducciones';
+  };
+}
+
+function responderVideo(idx, correcta, pts) {
+  const video = document.getElementById('video-el');
+  if (video) video.pause();
+
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+
   const esCorrecta = idx === correcta;
   btns[idx].classList.add(esCorrecta ? 'correct' : 'wrong');
   if (!esCorrecta) btns[correcta].classList.add('correct');
@@ -1730,6 +1916,7 @@ function skipFrase() {
 function siguientePregunta() {
   currentInput = '';
   if (audioActual) { audioActual.pause(); audioActual = null; }
+  if (videoActual) { videoActual.pause(); videoActual = null; }
   
   preguntaIdx++;
   if (preguntaIdx >= preguntasActuales.length) {
