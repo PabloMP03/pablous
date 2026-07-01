@@ -867,17 +867,17 @@ const CANCIONES = {
 // corte: segundo exacto en el que se pausa el vídeo (los archivos vienen sin recortar)
 // repetible/maxReps: cuántas veces se puede volver a ver el clip (antes de responder)
 const VIDEOS = {
-  400: [
-    { archivo: 'Dale_-_7Sec.mp4', corte: 7, puntos: 400, repetible: true, ops: ['Le posee el demonio a Ibra','Vomita delante de todos','Se cae para alante','Se le cae la copa'], r: 0 },
-    { archivo: 'Q_rico_-_4_Sec.mp4', corte: 4, puntos: 400, repetible: true, ops: ['Lasañita está quemada','Lasañita se cae al suelo','Lasañita está congelada','Se le cae el móvil a Roro'], r: 1 },
+  500: [
+    { archivo: 'Dale_-_7Sec.mp4', corte: 7, puntos: 500, repetible: true, ops: ['Le posee el demonio a Ibra','Vomita delante de todos','Se cae para alante','Se le cae la copa'], r: 0 },
+    { archivo: 'Q_rico_-_4_Sec.mp4', corte: 4, puntos: 500, repetible: true, ops: ['Lasañita está quemada','Lasañita se cae al suelo','Lasañita está congelada','Se le cae el móvil a Roro'], r: 1 },
   ],
-  600: [
-    { archivo: 'Los_prohibidos_-_4Sec.mp4', corte: 4, puntos: 600, repetible: true, ops: ['Se pone a hacer el moonwalk','Se pone a follarse el suelo','Intenta hacer otra flexión y se come el suelo','Se pone a besarse con el teléfono'], r: 1 },
-    { archivo: 'Contrataque_de_Andres_-_10Sec.mp4', corte: 10, puntos: 600, repetible: true, ops: ['Andrés hace un amago de hacerle una felación a Sergio','A Andrés le posee el espíritu de una rana','Andrés intenta hacer el tripaloski y se cae de boca','Llama a la puerta una mujer enfadada por el ruido'], r: 1 },
+  750: [
+    { archivo: 'Los_prohibidos_-_4Sec.mp4', corte: 4, puntos: 750, repetible: true, ops: ['Se pone a hacer el moonwalk','Se pone a follarse el suelo','Intenta hacer otra flexión y se come el suelo','Se pone a besarse con el teléfono'], r: 1 },
+    { archivo: 'Contrataque_de_Andres_-_10Sec.mp4', corte: 10, puntos: 750, repetible: true, ops: ['Andrés hace un amago de hacerle una felación a Sergio','A Andrés le posee el espíritu de una rana','Andrés intenta hacer el tripaloski y se cae de boca','Llama a la puerta una mujer enfadada por el ruido'], r: 1 },
   ],
-  800: [
-    { archivo: 'Pueblerino_-_3Sec.mp4', corte: 3, puntos: 800, repetible: false, ops: ['Aparece un jabalí y echan a correr','Escena romántica de Collado y Claudio','Collado intenta ayudar a Sergio en estado comatoso','Collado y Sergio están agarrados de la mano mirando las estrellas'], r: 2 },
-    { archivo: 'Quemazon_-_5Sec.mp4', corte: 5, puntos: 800, repetible: false, ops: ['Andrés vomita por la cara','Roro intenta escupir y se le sale un moco','Sale Sergio bailando solo en mitad de la Alameda','Se le cae el cubata en lo alto a Dani'], r: 0 },
+  1250: [
+    { archivo: 'Pueblerino_-_3Sec.mp4', corte: 3, puntos: 1250, repetible: false, ops: ['Aparece un jabalí y echan a correr','Escena romántica de Collado y Claudio','Collado intenta ayudar a Sergio en estado comatoso','Collado y Sergio están agarrados de la mano mirando las estrellas'], r: 2 },
+    { archivo: 'Quemazon_-_5Sec.mp4', corte: 5, puntos: 1250, repetible: false, ops: ['Andrés vomita por la cara','Roro intenta escupir y se le sale un moco','Sale Sergio bailando solo en mitad de la Alameda','Se le cae el cubata en lo alto a Dani'], r: 0 },
   ],
 };
 
@@ -911,7 +911,7 @@ const NOMBRES_GRUPO = ['Pablo','Andres','Ale','Claudio','Cesar','Fali','Juanki',
 const FRASES = {
   facil: [
     { quien: 'Sergio', frase: 'Una play rica y sana en ___', respuesta: 'PROTEINA', pista: 5 },
-    { quien: 'Godoalita', frase: 'Ale Cañete sobrino de ___', respuesta: 'CHANQUETRE', pista: 4 },
+    { quien: 'Godoalita', frase: 'Ale Cañete sobrino de ___', respuesta: 'CHANQUETE', pista: 4 },
     { quien: 'Ale', frase: 'Tremendo ___ fan de Mecano', respuesta: 'MARICON', pista: 3 },
   ],
   medio: [
@@ -939,8 +939,8 @@ const PUNTOS = { facil: 250, medio: 500, dificil: 750, muydificil: 1000 };
 let jugadorActual = '';
 const ADMIN = "Pablo";
 // Perfiles de PRUEBA: juegos desbloqueados aunque no sea la fecha + repetición libre.
-// ⚠️ Antes de la fiesta déjalo vacío:  const TESTERS = [];
-const TESTERS = ["Andres"];
+// ⚠️ Perfiles de prueba: vacío en la versión final
+const TESTERS = [];
 function esPrueba(nombre) { return nombre === ADMIN || TESTERS.includes(nombre); }
 let deviceId = localStorage.getItem("deviceId");
 
@@ -1406,7 +1406,7 @@ function seleccionarPreguntas(id) {
   } else if (id === 'video') {
     // Uno de cada tramo de puntos (400 / 600 / 800), así todos juegan con
     // el mismo potencial máximo aunque les toquen vídeos distintos
-    [400, 600, 800].forEach(tramo => {
+    [500, 750, 1250].forEach(tramo => {
       const pool = VIDEOS[tramo];
       const idx = Math.floor(Math.random() * pool.length);
       preguntas.push({ ...pool[idx], tipo: 'video' });
@@ -1671,7 +1671,12 @@ function responderVideo(idx, correcta, pts) {
 // ══════════════════════════════════════════════
 let fotoIntentoActual = 0;
 const FOTO_BLUR = [20, 12, 6, 0];
-const FOTO_PUNTOS_INTENTO = [1000, 700, 400, 150];
+// Factor sobre los puntos base del nivel, según el intento (1º=100%, 2º=70%...)
+const FOTO_FACTOR_INTENTO = [1, 0.7, 0.4, 0.15];
+
+function puntosFoto(nivel, intento) {
+  return Math.round(PUNTOS[nivel] * FOTO_FACTOR_INTENTO[intento]);
+}
 
 function renderFoto(body, p, pct, diffLabel, diffClass) {
   fotoIntentoActual = 0;
@@ -1693,26 +1698,26 @@ function renderFoto(body, p, pct, diffLabel, diffClass) {
     <div class="foto-container pop">
       <img id="foto-img" src="fotos/${p.archivo}" style="filter:blur(${FOTO_BLUR[0]}px);width:100%;height:100%;object-fit:cover" />
     </div>
-    <div style="text-align:center;margin-bottom:12px;font-size:13px;color:var(--muted)">¿Quién es? · +${FOTO_PUNTOS_INTENTO[0]} pts ahora</div>
+    <div style="text-align:center;margin-bottom:12px;font-size:13px;color:var(--muted)">¿Quién es? · +${puntosFoto(p.nivel, 0)} pts ahora</div>
     <div class="selector-wrap flex-col" style="gap:10px">
       <select id="foto-select">
         <option value="">Selecciona una persona...</option>
         ${opts}
       </select>
       <div style="display:flex;gap:10px;width:100%;max-width:340px">
-        <button class="btn btn-primary" style="flex:1" onclick="responderFoto('${p.nombre}')">Confirmar</button>
-        <button class="btn btn-skip" style="width:auto;padding:12px 20px" onclick="skipFoto('${p.nombre}')">Skip</button>
+        <button class="btn btn-primary" style="flex:1" onclick="responderFoto('${p.nombre}', '${p.nivel}')">Confirmar</button>
+        <button class="btn btn-skip" style="width:auto;padding:12px 20px" onclick="skipFoto('${p.nombre}', '${p.nivel}')">Skip</button>
       </div>
     </div>`;
 }
 
-function responderFoto(nombreCorrecto) {
+function responderFoto(nombreCorrecto, nivel) {
   const sel = document.getElementById('foto-select');
   if (!sel.value) { showToast('Selecciona alguien primero'); return; }
   
   if (sel.value === nombreCorrecto) {
     // Correcto!
-    const pts = FOTO_PUNTOS_INTENTO[fotoIntentoActual];
+    const pts = puntosFoto(nivel, fotoIntentoActual);
     puntuacionMinijuego += pts;
     document.getElementById('foto-img').style.filter = 'blur(0px)';
     showToast(`✅ ¡Correcto! +${pts} puntos`);
@@ -1737,7 +1742,7 @@ function responderFoto(nombreCorrecto) {
       else if (i === fotoIntentoActual) d.classList.add('active');
     });
 
-    const pts = FOTO_PUNTOS_INTENTO[fotoIntentoActual];
+    const pts = puntosFoto(nivel, fotoIntentoActual);
     const hint = document.querySelector('.selector-wrap').previousElementSibling;
     if (hint) hint.textContent = `¿Quién es? · +${pts} pts ahora`;
     
@@ -1746,7 +1751,7 @@ function responderFoto(nombreCorrecto) {
   }
 }
 
-function skipFoto(nombreCorrecto) {
+function skipFoto(nombreCorrecto, nivel) {
   fotoIntentoActual++;
   if (fotoIntentoActual >= 4) {
     document.getElementById('foto-img').style.filter = 'blur(0px)';
@@ -1761,7 +1766,7 @@ function skipFoto(nombreCorrecto) {
     if (i < fotoIntentoActual) d.classList.add('used');
     else if (i === fotoIntentoActual) d.classList.add('active');
   });
-  const pts = FOTO_PUNTOS_INTENTO[fotoIntentoActual];
+  const pts = puntosFoto(nivel, fotoIntentoActual);
   const hint = document.querySelector('.selector-wrap').previousElementSibling;
   if (hint) hint.textContent = `¿Quién es? · +${pts} pts ahora`;
 }
