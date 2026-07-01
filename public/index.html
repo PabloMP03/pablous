@@ -864,19 +864,20 @@ const CANCIONES = {
 // ── VIDEOS DATA ("¿Qué pasó después?") ──
 // Sin niveles de dificultad "reales", pero cada partida coge 1 vídeo de cada
 // tramo de puntos (400 / 600 / 800) para que sea justo entre jugadores.
-// repetible/maxReps: cuántas veces se puede volver a ver el clip
+// corte: segundo exacto en el que se pausa el vídeo (los archivos vienen sin recortar)
+// repetible/maxReps: cuántas veces se puede volver a ver el clip (antes de responder)
 const VIDEOS = {
   400: [
-    { archivo: 'Dale_-_7Sec.mp4', puntos: 400, repetible: true, ops: ['Le posee el demonio a Ibra','Vomita delante de todos','Se cae para alante','Se le cae la copa'], r: 0 },
-    { archivo: 'Q_rico_-_4_Sec.mp4', puntos: 400, repetible: true, ops: ['Lasañita está quemada','Lasañita se cae al suelo','Lasañita está congelada','Se le cae el móvil a Roro'], r: 1 },
+    { archivo: 'Dale_-_7Sec.mp4', corte: 7, puntos: 400, repetible: true, ops: ['Le posee el demonio a Ibra','Vomita delante de todos','Se cae para alante','Se le cae la copa'], r: 0 },
+    { archivo: 'Q_rico_-_4_Sec.mp4', corte: 4, puntos: 400, repetible: true, ops: ['Lasañita está quemada','Lasañita se cae al suelo','Lasañita está congelada','Se le cae el móvil a Roro'], r: 1 },
   ],
   600: [
-    { archivo: 'Los_prohibidos_-_4Sec.mp4', puntos: 600, repetible: true, ops: ['Se pone a hacer el moonwalk','Se pone a follarse el suelo','Intenta hacer otra flexión y se come el suelo','Se pone a besarse con el teléfono'], r: 1 },
-    { archivo: 'Contrataque_de_Andres_-_10Sec.mp4', puntos: 600, repetible: true, ops: ['Andrés hace un amago de hacerle una felación a Sergio','A Andrés le posee el espíritu de una rana','Andrés intenta hacer el tripaloski y se cae de boca','Llama a la puerta una mujer enfadada por el ruido'], r: 1 },
+    { archivo: 'Los_prohibidos_-_4Sec.mp4', corte: 4, puntos: 600, repetible: true, ops: ['Se pone a hacer el moonwalk','Se pone a follarse el suelo','Intenta hacer otra flexión y se come el suelo','Se pone a besarse con el teléfono'], r: 1 },
+    { archivo: 'Contrataque_de_Andres_-_10Sec.mp4', corte: 10, puntos: 600, repetible: true, ops: ['Andrés hace un amago de hacerle una felación a Sergio','A Andrés le posee el espíritu de una rana','Andrés intenta hacer el tripaloski y se cae de boca','Llama a la puerta una mujer enfadada por el ruido'], r: 1 },
   ],
   800: [
-    { archivo: 'Pueblerino_-_3Sec.mp4', puntos: 800, repetible: false, ops: ['Aparece un jabalí y echan a correr','Escena romántica de Collado y Claudio','Collado intenta ayudar a Sergio en estado comatoso','Collado y Sergio están agarrados de la mano mirando las estrellas'], r: 2 },
-    { archivo: 'Quemazon_-_5Sec.mp4', puntos: 800, repetible: false, ops: ['Andrés vomita por la cara','Roro intenta escupir y se le sale un moco','Sale Sergio bailando solo en mitad de la Alameda','Se le cae el cubata en lo alto a Dani'], r: 0 },
+    { archivo: 'Pueblerino_-_3Sec.mp4', corte: 3, puntos: 800, repetible: false, ops: ['Aparece un jabalí y echan a correr','Escena romántica de Collado y Claudio','Collado intenta ayudar a Sergio en estado comatoso','Collado y Sergio están agarrados de la mano mirando las estrellas'], r: 2 },
+    { archivo: 'Quemazon_-_5Sec.mp4', corte: 5, puntos: 800, repetible: false, ops: ['Andrés vomita por la cara','Roro intenta escupir y se le sale un moco','Sale Sergio bailando solo en mitad de la Alameda','Se le cae el cubata en lo alto a Dani'], r: 0 },
   ],
 };
 
@@ -1570,7 +1571,7 @@ function renderVideo(body, p, pct, diffLabel, diffClass) {
     <div class="video-player pop">
       <div class="question-points" style="margin-bottom:4px">+${pts} puntos</div>
       <div class="video-wrap">
-        <video id="video-el" src="videos/${p.archivo}" playsinline webkit-playsinline></video>
+        <video id="video-el" src="videos/${p.archivo}" playsinline webkit-playsinline data-corte="${p.corte}"></video>
         <button class="play-btn video-play-btn" id="video-play-btn" onclick="playVideo()">▶</button>
       </div>
       <div class="audio-hint" id="video-hint">Toca para ver el clip · ${maxReps === 1 ? '1 reproducción' : `Hasta ${maxReps} reproducciones`}</div>
@@ -1585,6 +1586,33 @@ function renderVideo(body, p, pct, diffLabel, diffClass) {
 
   body.dataset.reps = '0';
   body.dataset.maxReps = maxReps;
+  body.dataset.respondido = '0';
+
+  const video = document.getElementById('video-el');
+
+  // Los archivos no vienen recortados de verdad, así que el corte se
+  // fuerza aquí: en cuanto llega al segundo indicado, se pausa solo.
+  video.ontimeupdate = () => {
+    if (body.dataset.respondido === '1') return; // en fase de "reveal", no cortar
+    const corte = parseFloat(video.dataset.corte);
+    if (video.currentTime >= corte) {
+      video.pause();
+    }
+  };
+
+  // Cuando se pausa (por el corte o al acabar), reaparece el botón de play
+  video.onpause = () => {
+    if (body.dataset.respondido === '1') return; // en reveal no tocar la UI
+    const btn = document.getElementById('video-play-btn');
+    const repsNow = parseInt(body.dataset.reps || '0');
+    const maxRepsNow = parseInt(body.dataset.maxReps || '1');
+    if (btn) {
+      btn.classList.remove('hidden');
+      btn.disabled = repsNow >= maxRepsNow;
+    }
+    const hint = document.getElementById('video-hint');
+    if (hint) hint.textContent = repsNow >= maxRepsNow ? 'Sin más reproducciones' : `Reproducción ${repsNow}/${maxRepsNow}`;
+  };
 }
 
 function playVideo() {
@@ -1609,17 +1637,12 @@ function playVideo() {
 
   const hint = document.getElementById('video-hint');
   if (hint) hint.textContent = `Reproducción ${nuevasReps}/${maxReps}`;
-
-  video.onended = () => {
-    btn.classList.remove('hidden');
-    btn.disabled = nuevasReps >= maxReps;
-    if (nuevasReps >= maxReps && hint) hint.textContent = 'Sin más reproducciones';
-  };
 }
 
 function responderVideo(idx, correcta, pts) {
+  const body = document.getElementById('mj-body');
   const video = document.getElementById('video-el');
-  if (video) video.pause();
+  body.dataset.respondido = '1'; // a partir de aquí el corte deja de aplicarse
 
   const btns = document.querySelectorAll('.option-btn');
   btns.forEach(b => b.disabled = true);
@@ -1629,7 +1652,18 @@ function responderVideo(idx, correcta, pts) {
   if (!esCorrecta) btns[correcta].classList.add('correct');
 
   if (esCorrecta) puntuacionMinijuego += pts;
-  setTimeout(() => siguientePregunta(), 1200);
+
+  const playBtn = document.getElementById('video-play-btn');
+  if (playBtn) playBtn.classList.add('hidden');
+  const hint = document.getElementById('video-hint');
+  if (hint) hint.textContent = '👀 Así sigue...';
+
+  // Reanuda el vídeo desde donde se cortó para enseñar qué pasó después
+  if (video) {
+    video.play().catch(() => {});
+  }
+
+  setTimeout(() => siguientePregunta(), 2800);
 }
 
 // ══════════════════════════════════════════════
