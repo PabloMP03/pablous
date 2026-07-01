@@ -189,6 +189,18 @@
       margin-top: 4px;
     }
     .lobby-player span { color: var(--text); font-weight: 700; }
+    .lobby-countdown {
+      display: inline-block;
+      margin: 10px 0 2px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,107,53,0.12));
+      border: 1px solid rgba(255,215,0,0.35);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.3px;
+    }
 
     .premio-card {
       background: linear-gradient(135deg, rgba(255,215,0,0.10), rgba(255,107,53,0.10)) !important;
@@ -393,7 +405,9 @@
       transition: transform 0.2s;
       box-shadow: 0 4px 20px rgba(255,61,107,0.4);
     }
-    .play-btn:hover { transform: scale(1.1); }
+    .play-btn:not(.video-play-btn):hover {
+    transform: scale(1.1);
+    }
     .play-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
     /* ── VIDEO ── */
@@ -758,6 +772,7 @@
 <div id="screen-lobby" class="screen">
   <div class="lobby-header">
     <div class="lobby-title">PabloUs</div>
+    <div class="lobby-countdown" id="lobby-countdown">⏳ …</div>
     <div class="lobby-player">Jugando como <span id="lobby-nombre">—</span></div>
   </div>
 
@@ -809,10 +824,10 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // Zona horaria España (Europe/Madrid)
 const UNLOCK_DATES = {
   canciones: new Date('2026-07-01T00:00:00+02:00'),
-  video:     new Date('2026-07-05T00:00:00+02:00'),
-  fotos:     new Date('2026-07-09T00:00:00+02:00'),
-  frases:    new Date('2026-07-13T00:00:00+02:00'),
-  trivia:    new Date('2026-07-18T00:00:00+02:00'),
+  video:     new Date('2026-07-04T00:00:00+02:00'),
+  fotos:     new Date('2026-07-11T00:00:00+02:00'),
+  frases:    new Date('2026-07-18T00:00:00+02:00'),
+  trivia:    new Date('2026-07-25T00:00:00+02:00'),
 };
 
 const MINIJUEGOS_CONFIG = [
@@ -1179,8 +1194,22 @@ function actualizarMinijuegosGrid() {
 }
 
 // 6ª tarjeta especial: no es un minijuego, no puntúa ni afecta al ranking.
-// Se desbloquea el mismo día que el Trivia (18 de julio, día de la fiesta).
+// Se desbloquea el mismo día que el Trivia (25 de julio, día de la fiesta).
 const PREMIO_UNLOCK_DATE = UNLOCK_DATES.trivia;
+
+// Contador de días hasta la fiesta (25 de julio 00:00), mostrado en la cabecera del lobby.
+const FIESTA_DATE = UNLOCK_DATES.trivia;
+function actualizarContadorFiesta() {
+  const el = document.getElementById('lobby-countdown');
+  if (!el) return;
+  const ms = FIESTA_DATE - new Date();
+  if (ms <= 0) {
+    el.textContent = '🎉 ¡Hoy es el día!';
+    return;
+  }
+  const dias = Math.ceil(ms / 86400000);
+  el.textContent = `⏳ Faltan ${dias} ${dias === 1 ? 'día' : 'días'}`;
+}
 
 function buildPremioCard() {
   const unlocked = new Date() >= PREMIO_UNLOCK_DATE;
@@ -1226,8 +1255,10 @@ function tickCountdowns() {
     else necesitaRepintar = true;
   }
   if (necesitaRepintar) actualizarMinijuegosGrid();
+  actualizarContadorFiesta();
 }
 setInterval(tickCountdowns, 1000);
+actualizarContadorFiesta();
 
 // ══════════════════════════════════════════════
 // NAVEGACIÓN
