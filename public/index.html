@@ -189,18 +189,6 @@
       margin-top: 4px;
     }
     .lobby-player span { color: var(--text); font-weight: 700; }
-    .lobby-countdown {
-      display: inline-block;
-      margin: 10px 0 2px;
-      padding: 6px 16px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,107,53,0.12));
-      border: 1px solid rgba(255,215,0,0.35);
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--gold);
-      letter-spacing: 0.3px;
-    }
 
     .premio-card {
       background: linear-gradient(135deg, rgba(255,215,0,0.10), rgba(255,107,53,0.10)) !important;
@@ -215,6 +203,53 @@
       width: 100%;
       max-width: 420px;
     }
+
+    /* ── ENCUESTA ── */
+    .encuesta-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 16px;
+    }
+    .encuesta-question {
+      font-size: 14px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+    .encuesta-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .encuesta-btn { max-width: none; flex: 1; padding: 12px; font-size: 14px; }
+    .encuesta-result { display: flex; flex-direction: column; gap: 10px; }
+    .encuesta-row {
+      display: grid;
+      grid-template-columns: 46px 1fr 64px;
+      align-items: center;
+      gap: 10px;
+    }
+    .encuesta-label { font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+    .encuesta-bar-wrap {
+      height: 18px;
+      background: var(--surface);
+      border-radius: 9px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .encuesta-bar {
+      height: 100%;
+      border-radius: 9px 0 0 9px;
+      transition: width 0.5s ease;
+    }
+    .encuesta-bar.si { background: linear-gradient(90deg, var(--success), #00b85c); }
+    .encuesta-bar.no { background: linear-gradient(90deg, var(--error), #cc1f4d); }
+    .encuesta-pct { font-size: 12px; font-weight: 700; text-align: right; color: var(--text); }
+    .encuesta-total { text-align: center; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .encuesta-voted-tag { color: var(--accent3); font-weight: 800; }
 
     .minijuego-card {
       background: var(--card);
@@ -405,9 +440,7 @@
       transition: transform 0.2s;
       box-shadow: 0 4px 20px rgba(255,61,107,0.4);
     }
-    .play-btn:not(.video-play-btn):hover {
-    transform: scale(1.1);
-    }
+    .play-btn:hover { transform: scale(1.1); }
     .play-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
     /* ── VIDEO ── */
@@ -772,12 +805,15 @@
 <div id="screen-lobby" class="screen">
   <div class="lobby-header">
     <div class="lobby-title">PabloUs</div>
-    <div class="lobby-countdown" id="lobby-countdown">⏳ …</div>
     <div class="lobby-player">Jugando como <span id="lobby-nombre">—</span></div>
   </div>
 
   <div class="minijuegos-grid" id="minijuegos-grid">
     <!-- generado por JS -->
+  </div>
+
+  <div class="encuesta-card" id="encuesta-card">
+    <div class="loading"><div class="spinner"></div> Cargando encuesta...</div>
   </div>
 
   <div class="ranking-section">
@@ -824,9 +860,9 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // Zona horaria España (Europe/Madrid)
 const UNLOCK_DATES = {
   canciones: new Date('2026-07-01T00:00:00+02:00'),
-  video:     new Date('2026-07-02T00:00:00+02:00'),
-  fotos:     new Date('2026-07-06T00:00:00+02:00'),
-  frases:    new Date('2026-07-10T00:00:00+02:00'),
+  video:     new Date('2026-07-05T00:00:00+02:00'),
+  fotos:     new Date('2026-07-09T00:00:00+02:00'),
+  frases:    new Date('2026-07-13T00:00:00+02:00'),
   trivia:    new Date('2026-07-18T00:00:00+02:00'),
 };
 
@@ -1036,6 +1072,84 @@ async function upsertScore(playerName, minijuego, puntuacion) {
 }
 
 // ══════════════════════════════════════════════
+// ENCUESTA
+// ══════════════════════════════════════════════
+async function getPollVotes() {
+  return await sbFetch('poll_votes?select=*') || [];
+}
+
+async function votarEncuesta(opcion) {
+  const buttons = document.querySelectorAll('.encuesta-btn');
+  buttons.forEach(b => b.disabled = true);
+  try {
+    await sbFetch('poll_votes?on_conflict=player_name', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify({ player_name: jugadorActual, voto: opcion })
+    });
+  } catch (err) {
+    console.error('Error votando:', err);
+    showToast('⚠️ No se pudo guardar tu voto, inténtalo de nuevo');
+    buttons.forEach(b => b.disabled = false);
+    return;
+  }
+  await renderEncuesta();
+}
+
+async function renderEncuesta() {
+  const el = document.getElementById('encuesta-card');
+  if (!el) return;
+
+  let votes;
+  try {
+    votes = await getPollVotes();
+  } catch (err) {
+    console.error('Error cargando encuesta:', err);
+    if (!el.dataset.cargada) {
+      el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px">No se pudo cargar la encuesta 📡</div>';
+    }
+    return;
+  }
+  el.dataset.cargada = '1';
+
+  const miVoto = votes.find(v => v.player_name === jugadorActual);
+
+  if (!miVoto) {
+    // Aún no ha votado: solo ve la pregunta y los botones, sin resultados
+    el.innerHTML = `
+      <div class="encuesta-question">🔥 ¿Ponemos castigo para el último clasificado?</div>
+      <div class="encuesta-buttons">
+        <button class="btn btn-primary encuesta-btn" onclick="votarEncuesta('si')">Sí</button>
+        <button class="btn btn-secondary encuesta-btn" onclick="votarEncuesta('no')">No</button>
+      </div>`;
+    return;
+  }
+
+  // Ya ha votado: ahora sí ve los resultados
+  const total = votes.length;
+  const siCount = votes.filter(v => v.voto === 'si').length;
+  const noCount = total - siCount;
+  const siPct = total ? Math.round((siCount / total) * 100) : 0;
+  const noPct = total ? 100 - siPct : 0;
+
+  el.innerHTML = `
+    <div class="encuesta-question">🔥 ¿Ponemos castigo para el último clasificado?</div>
+    <div class="encuesta-result">
+      <div class="encuesta-row">
+        <div class="encuesta-label">Sí ${miVoto.voto === 'si' ? '<span class="encuesta-voted-tag">· tú</span>' : ''}</div>
+        <div class="encuesta-bar-wrap"><div class="encuesta-bar si" style="width:${siPct}%"></div></div>
+        <div class="encuesta-pct">${siPct}% (${siCount})</div>
+      </div>
+      <div class="encuesta-row">
+        <div class="encuesta-label">No ${miVoto.voto === 'no' ? '<span class="encuesta-voted-tag">· tú</span>' : ''}</div>
+        <div class="encuesta-bar-wrap"><div class="encuesta-bar no" style="width:${noPct}%"></div></div>
+        <div class="encuesta-pct">${noPct}% (${noCount})</div>
+      </div>
+      <div class="encuesta-total">${total} voto${total === 1 ? '' : 's'} en total</div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════
 // REALTIME
 // ══════════════════════════════════════════════
 function initRealtime() {
@@ -1044,6 +1158,7 @@ function initRealtime() {
     if (document.getElementById('screen-lobby').classList.contains('active') ||
         document.getElementById('screen-final').classList.contains('active')) {
       await actualizarRanking();
+      await renderEncuesta();
     }
   }, 10000);
 }
@@ -1194,22 +1309,8 @@ function actualizarMinijuegosGrid() {
 }
 
 // 6ª tarjeta especial: no es un minijuego, no puntúa ni afecta al ranking.
-// Se desbloquea el mismo día que el Trivia (25 de julio, día de la fiesta).
+// Se desbloquea el mismo día que el Trivia (18 de julio, día de la fiesta).
 const PREMIO_UNLOCK_DATE = UNLOCK_DATES.trivia;
-
-// Contador de días hasta la fiesta (25 de julio 00:00), mostrado en la cabecera del lobby.
-const FIESTA_DATE = UNLOCK_DATES.trivia;
-function actualizarContadorFiesta() {
-  const el = document.getElementById('lobby-countdown');
-  if (!el) return;
-  const ms = FIESTA_DATE - new Date();
-  if (ms <= 0) {
-    el.textContent = '🎉 ¡Hoy es el día!';
-    return;
-  }
-  const dias = Math.ceil(ms / 86400000);
-  el.textContent = `⏳ Faltan ${dias} ${dias === 1 ? 'día' : 'días'}`;
-}
 
 function buildPremioCard() {
   const unlocked = new Date() >= PREMIO_UNLOCK_DATE;
@@ -1255,10 +1356,8 @@ function tickCountdowns() {
     else necesitaRepintar = true;
   }
   if (necesitaRepintar) actualizarMinijuegosGrid();
-  actualizarContadorFiesta();
 }
 setInterval(tickCountdowns, 1000);
-actualizarContadorFiesta();
 
 // ══════════════════════════════════════════════
 // NAVEGACIÓN
@@ -1402,6 +1501,7 @@ async function completarEntrada(nombre) {
     document.getElementById("lobby-nombre").textContent = nombre;
     showScreen("lobby");
     await actualizarRanking();
+    await renderEncuesta();
     initRealtime();
 }
 
@@ -1424,6 +1524,7 @@ function volverLobby() {
   if (videoActual) { videoActual.pause(); videoActual = null; }
   showScreen('lobby');
   actualizarRanking();
+  renderEncuesta();
 }
 
 // ══════════════════════════════════════════════
