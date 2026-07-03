@@ -190,11 +190,38 @@
     }
     .lobby-player span { color: var(--text); font-weight: 700; }
 
-    .premio-card {
-      background: linear-gradient(135deg, rgba(255,215,0,0.10), rgba(255,107,53,0.10)) !important;
-      border-color: rgba(255,215,0,0.4) !important;
+    .granfinal-card {
+      background: linear-gradient(135deg, rgba(255,215,0,0.16), rgba(255,107,53,0.16)) !important;
+      border: 1.5px solid rgba(255,215,0,0.55) !important;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(255,215,0,0.15), inset 0 0 20px rgba(255,215,0,0.05);
     }
-    .premio-card .minijuego-name { color: var(--gold); }
+    .granfinal-card .minijuego-name {
+      color: var(--gold);
+      font-weight: 900;
+      text-shadow: 0 0 12px rgba(255,215,0,0.5);
+    }
+    .granfinal-card .minijuego-emoji {
+      filter: drop-shadow(0 0 8px rgba(255,215,0,0.6));
+    }
+    .granfinal-card::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: linear-gradient(115deg, transparent 35%, rgba(255,215,0,0.35) 50%, transparent 65%);
+      animation: shimmer 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-30%) translateY(-30%) rotate(0deg); }
+      100% { transform: translateX(30%) translateY(30%) rotate(0deg); }
+    }
+    .granfinal-card.locked {
+      box-shadow: 0 0 12px rgba(255,215,0,0.08);
+    }
+    .granfinal-card.locked::before { opacity: 0.4; }
 
     .minijuegos-grid {
       display: grid;
@@ -891,10 +918,10 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // Zona horaria España (Europe/Madrid)
 const UNLOCK_DATES = {
   canciones: new Date('2026-07-01T00:00:00+02:00'),
-  video:     new Date('2026-07-05T00:00:00+02:00'),
-  fotos:     new Date('2026-07-09T00:00:00+02:00'),
-  frases:    new Date('2026-07-13T00:00:00+02:00'),
-  trivia:    new Date('2026-07-18T00:00:00+02:00'),
+  video:     new Date('2026-07-02T00:00:00+02:00'),
+  fotos:     new Date('2026-07-06T00:00:00+02:00'),
+  frases:    new Date('2026-07-10T00:00:00+02:00'),
+  trivia:    new Date('2026-07-14T00:00:00+02:00'),
 };
 
 const MINIJUEGOS_CONFIG = [
@@ -1353,31 +1380,31 @@ function actualizarMinijuegosGrid() {
   grid.innerHTML = cardsHtml + buildPremioCard();
 }
 
-// 6ª tarjeta especial: no es un minijuego, no puntúa ni afecta al ranking.
-// Se desbloquea el mismo día que el Trivia (18 de julio, día de la fiesta).
-const PREMIO_UNLOCK_DATE = UNLOCK_DATES.trivia;
+// 6ª tarjeta especial: no es un minijuego jugable todavía (está por diseñar),
+// no puntúa ni afecta al ranking. Se desbloquea el 18 de julio, día de la fiesta.
+const GRAN_FINAL_UNLOCK_DATE = new Date('2026-07-18T00:00:00+02:00');
 
 function buildPremioCard() {
-  const unlocked = new Date() >= PREMIO_UNLOCK_DATE;
+  const unlocked = new Date() >= GRAN_FINAL_UNLOCK_DATE;
 
   if (unlocked) {
     return `
-      <div class="minijuego-card premio-card done">
-        <div class="minijuego-emoji">🎁</div>
-        <div class="minijuego-name">Premio al 1º</div>
-        <div class="minijuego-status">del ranking · por definir</div>
+      <div class="minijuego-card granfinal-card done">
+        <div class="minijuego-emoji">🏆</div>
+        <div class="minijuego-name">La Gran Final</div>
+        <div class="minijuego-status">¡Ha llegado el día! 🎉</div>
       </div>`;
   }
 
-  const cd = tiempoHasta(PREMIO_UNLOCK_DATE);
-  const fecha = PREMIO_UNLOCK_DATE.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+  const cd = tiempoHasta(GRAN_FINAL_UNLOCK_DATE);
+  const fecha = GRAN_FINAL_UNLOCK_DATE.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
   return `
-    <div class="minijuego-card premio-card locked">
+    <div class="minijuego-card granfinal-card locked">
       <div class="lock-icon">🔒</div>
-      <div class="minijuego-emoji">🎁</div>
-      <div class="minijuego-name">Premio al 1º</div>
+      <div class="minijuego-emoji">🏆</div>
+      <div class="minijuego-name">La Gran Final</div>
       <div class="unlock-date">Se revela el ${fecha}</div>
-      <div class="countdown" id="cd-premio">⏳ ${cd || ''}</div>
+      <div class="countdown" id="cd-granfinal">⏳ ${cd || ''}</div>
     </div>`;
 }
 
@@ -1394,9 +1421,9 @@ function tickCountdowns() {
       else necesitaRepintar = true; // acaba de desbloquearse
     }
   });
-  const elPremio = document.getElementById('cd-premio');
+  const elPremio = document.getElementById('cd-granfinal');
   if (elPremio) {
-    const t = tiempoHasta(PREMIO_UNLOCK_DATE);
+    const t = tiempoHasta(GRAN_FINAL_UNLOCK_DATE);
     if (t) elPremio.textContent = `⏳ ${t}`;
     else necesitaRepintar = true;
   }
