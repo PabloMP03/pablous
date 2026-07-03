@@ -251,6 +251,37 @@
     .encuesta-total { text-align: center; font-size: 11px; color: var(--muted); margin-top: 2px; }
     .encuesta-voted-tag { color: var(--accent3); font-weight: 800; }
 
+    .encuesta-detalle { margin-top: 4px; }
+    .encuesta-detalle summary {
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      text-align: center;
+      list-style: none;
+      user-select: none;
+    }
+    .encuesta-detalle summary::-webkit-details-marker { display: none; }
+    .encuesta-quien {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    .encuesta-quien b { color: var(--text); }
+    .encuesta-quien .dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+    .encuesta-quien .dot.si { background: var(--success); }
+    .encuesta-quien .dot.no { background: var(--error); }
+
     .minijuego-card {
       background: var(--card);
       border: 1.5px solid var(--border);
@@ -1024,17 +1055,14 @@ async function sbFetch(path, options = {}) {
     Prefer: "return=representation",
     ...(options.headers || {})
   };
-
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
     headers
   });
-
   if (!res.ok && res.status !== 406) {
     const err = await res.text();
     throw new Error(err);
   }
-
   try {
     return await res.json();
   } catch {
@@ -1139,6 +1167,8 @@ async function renderEncuesta() {
   const noCount = total - siCount;
   const siPct = total ? Math.round((siCount / total) * 100) : 0;
   const noPct = total ? 100 - siPct : 0;
+  const nombresSi = votes.filter(v => v.voto === 'si').map(v => v.player_name).sort();
+  const nombresNo = votes.filter(v => v.voto === 'no').map(v => v.player_name).sort();
 
   el.innerHTML = `
     <div class="encuesta-question">🔥 ¿Ponemos castigo para el último clasificado?</div>
@@ -1154,6 +1184,13 @@ async function renderEncuesta() {
         <div class="encuesta-pct">${noPct}% (${noCount})</div>
       </div>
       <div class="encuesta-total">${total} voto${total === 1 ? '' : 's'} en total</div>
+      <details class="encuesta-detalle">
+        <summary>👀 Ver quién ha votado</summary>
+        <div class="encuesta-quien">
+          <div><span class="dot si"></span><b>Sí:</b> ${nombresSi.length ? nombresSi.join(', ') : '—'}</div>
+          <div><span class="dot no"></span><b>No:</b> ${nombresNo.length ? nombresNo.join(', ') : '—'}</div>
+        </div>
+      </details>
     </div>`;
 }
 
