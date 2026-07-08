@@ -333,6 +333,7 @@
     }
     .ranking-item.me { border-color: var(--accent); background: rgba(255,61,107,0.05); }
     .ranking-item.first { border-color: var(--gold); background: rgba(255,215,0,0.05); }
+    .ranking-item.completo { border-color: var(--success); }
     .rank-pos { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--muted); width: 32px; text-align: center; }
     .rank-pos.gold { color: var(--gold); }
     .rank-pos.silver { color: #c0c0c0; }
@@ -1058,14 +1059,10 @@
 <!-- EASTER EGG DEL CASTIGO -->
 <div class="castigo-modal-overlay" id="castigo-modal-overlay" onclick="cerrarCastigoModal()">
   <div class="castigo-modal-card pop" onclick="event.stopPropagation()">
-    <div class="castigo-modal-emoji">🔥🤫</div>
-    <div class="castigo-modal-title">Pista...</div>
-    <div class="castigo-modal-text">
-      Todos vais a aportar vuestro granito de fuego, en secreto.<br><br>
-      El día de la fiesta, el destino le pondrá al perdedor <b>varias opciones</b> sobre la mesa... y tendrá que elegir una. 😈<br><br>
-      <span style="opacity:0.6;font-size:12px">(No se libra nadie de participar)</span>
-    </div>
-    <button class="btn btn-primary" onclick="cerrarCastigoModal()">Uy... 🔥</button>
+    <div class="castigo-modal-emoji" id="castigo-modal-emoji">🔥🤫</div>
+    <div class="castigo-modal-title" id="castigo-modal-title">Pista...</div>
+    <div class="castigo-modal-text" id="castigo-modal-text"></div>
+    <button class="btn btn-primary" id="castigo-modal-btn" onclick="cerrarCastigoModal()">Uy... 🔥</button>
   </div>
 </div>
 
@@ -1417,7 +1414,8 @@ function renderRanking() {
   const medals = ['🥇','🥈','🥉'];
   list.innerHTML = rankingData.map((p, i) => {
     const esYo = p.nombre === jugadorActual;
-    const clases = `ranking-item ${esYo ? 'me' : ''} ${i === 0 ? 'first' : ''}`;
+    const completo = p.jugados === CORE_IDS.length;
+    const clases = `ranking-item ${esYo ? 'me' : ''} ${i === 0 ? 'first' : ''} ${completo ? 'completo' : ''}`;
     const posClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
     const details = MINIJUEGOS_CONFIG.map(m => {
       const sc = p.scores[m.id];
@@ -1511,13 +1509,25 @@ function actualizarMinijuegosGrid() {
 
 // 7ª tarjeta, ancha (ocupa las dos columnas): resultado ya cerrado de la
 // votación sobre el castigo. No es un minijuego, es solo informativa.
+// El 18 a las 00:15 (15 min después de desbloquearse La Gran Final) se
+// revela la descripción completa del castigo. Hasta entonces solo hay pista.
+const CASTIGO_REVEAL_DATE = new Date('2026-07-18T00:15:00+02:00');
+
 function buildCastigoCard() {
+  const revelado = new Date() >= CASTIGO_REVEAL_DATE;
+  const cd = revelado ? '' : tiempoHasta(CASTIGO_REVEAL_DATE);
+
+  const hintHtml = revelado
+    ? `<div class="castigo-tap-hint">👆 Toca para ver de qué va</div>`
+    : `<div class="castigo-tap-hint">👆 Toca para una pista...</div>
+       <div class="countdown" id="cd-castigo-reveal">⏳ ${cd || ''}</div>`;
+
   return `
     <div class="minijuego-card castigo-card" onclick="mostrarCastigoEasterEgg()">
       <div class="castigo-emoji">🔥</div>
       <div class="castigo-title">¡Habrá castigo!</div>
       <div class="castigo-sub">La votación lo decidió: 14 a favor · 2 en contra</div>
-      <div class="castigo-tap-hint">👆 Toca para una pista...</div>
+      ${hintHtml}
     </div>`;
 }
 
@@ -1534,6 +1544,12 @@ function tickCountdowns() {
       else necesitaRepintar = true; // acaba de desbloquearse
     }
   });
+  const cdCastigo = document.getElementById('cd-castigo-reveal');
+  if (cdCastigo) {
+    const t = tiempoHasta(CASTIGO_REVEAL_DATE);
+    if (t) cdCastigo.textContent = `⏳ ${t}`;
+    else necesitaRepintar = true; // ya se puede revelar
+  }
   if (necesitaRepintar) actualizarMinijuegosGrid();
 }
 setInterval(tickCountdowns, 1000);
@@ -3061,8 +3077,9 @@ async function showFinal() {
   const medals = ['🥇','🥈','🥉'];
   fList.innerHTML = rankingData.map((p, i) => {
     const esYo = p.nombre === jugadorActual;
+    const completo = p.jugados === CORE_IDS.length;
     return `
-    <div class="ranking-item ${esYo ? 'me' : ''}">
+    <div class="ranking-item ${esYo ? 'me' : ''} ${completo ? 'completo' : ''}">
       <div class="rank-pos">${medals[i] || (i+1)}</div>
       <div class="rank-info">
         <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div>
@@ -3090,6 +3107,30 @@ function cerrarImagenCompleta() {
 }
 
 function mostrarCastigoEasterEgg() {
+  const revelado = new Date() >= CASTIGO_REVEAL_DATE;
+
+  const emoji = document.getElementById('castigo-modal-emoji');
+  const title = document.getElementById('castigo-modal-title');
+  const text = document.getElementById('castigo-modal-text');
+  const btn = document.getElementById('castigo-modal-btn');
+
+  if (revelado) {
+    emoji.textContent = '🔥📝';
+    title.textContent = '¡Así es el castigo!';
+    text.innerHTML = `
+      Cada uno escribe un <b>reto</b> en un papelito y lo mete en el bote.<br><br>
+      El último clasificado sacará <b>3 papeles al azar</b> de entre todos los retos... y elegirá cuál de los 3 tiene que cumplir. 😈`;
+    btn.textContent = 'Entendido 🔥';
+  } else {
+    emoji.textContent = '🔥🤫';
+    title.textContent = 'Pista...';
+    text.innerHTML = `
+      Todos vais a aportar vuestro granito de fuego, en secreto.<br><br>
+      El día de la fiesta, el destino le pondrá al perdedor <b>varias opciones</b> sobre la mesa... y tendrá que elegir una. 😈<br><br>
+      <span style="opacity:0.6;font-size:12px">(No se libra nadie de participar)</span>`;
+    btn.textContent = 'Uy... 🔥';
+  }
+
   document.getElementById('castigo-modal-overlay').classList.add('show');
 }
 
