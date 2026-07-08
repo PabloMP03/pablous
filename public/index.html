@@ -333,6 +333,8 @@
     }
     .ranking-item.me { border-color: var(--accent); background: rgba(255,61,107,0.05); }
     .ranking-item.first { border-color: var(--gold); background: rgba(255,215,0,0.05); }
+    .ranking-item.completo { border-color: var(--accent3); box-shadow: 0 0 0 1px rgba(0,212,255,0.15) inset; }
+    .completo-tag { color: var(--accent3); font-size: 10px; font-weight: 800; letter-spacing: 0.3px; }
     .rank-pos { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--muted); width: 32px; text-align: center; }
     .rank-pos.gold { color: var(--gold); }
     .rank-pos.silver { color: #c0c0c0; }
@@ -1377,7 +1379,8 @@ function renderRanking() {
   const medals = ['🥇','🥈','🥉'];
   list.innerHTML = rankingData.map((p, i) => {
     const esYo = p.nombre === jugadorActual;
-    const clases = `ranking-item ${esYo ? 'me' : ''} ${i === 0 ? 'first' : ''}`;
+    const completo = p.jugados === CORE_IDS.length;
+    const clases = `ranking-item ${esYo ? 'me' : ''} ${i === 0 ? 'first' : ''} ${completo ? 'completo' : ''}`;
     const posClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
     const details = MINIJUEGOS_CONFIG.map(m => {
       const sc = p.scores[m.id];
@@ -1387,7 +1390,7 @@ function renderRanking() {
       <div class="${clases}">
         <div class="rank-pos ${posClass}">${medals[i] || (i+1)}</div>
         <div class="rank-info">
-          <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div>
+          <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}${completo ? ' <span class="completo-tag">✓ completo</span>' : ''}</div>
           <div class="rank-details">${details} · ${p.jugados}/${CORE_IDS.length}</div>
         </div>
         <div class="rank-score">${p.total}</div>
@@ -2979,15 +2982,19 @@ async function showFinal() {
 
   const fList = document.getElementById('final-ranking-list');
   const medals = ['🥇','🥈','🥉'];
-  fList.innerHTML = rankingData.map((p, i) => `
-    <div class="ranking-item ${p.nombre === jugadorActual ? 'me' : ''}">
+  fList.innerHTML = rankingData.map((p, i) => {
+    const esYo = p.nombre === jugadorActual;
+    const completo = p.jugados === CORE_IDS.length;
+    return `
+    <div class="ranking-item ${esYo ? 'me' : ''} ${completo ? 'completo' : ''}">
       <div class="rank-pos">${medals[i] || (i+1)}</div>
       <div class="rank-info">
-        <div class="rank-name">${p.nombre}${p.nombre === jugadorActual ? ' (tú)' : ''}</div>
+        <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}${completo ? ' <span class="completo-tag">✓ completo</span>' : ''}</div>
         <div class="rank-details">${MINIJUEGOS_CONFIG.map(m => `${m.emoji}${p.scores[m.id] ?? '—'}`).join(' ')}</div>
       </div>
       <div class="rank-score">${p.total}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   showScreen('final');
   lanzarConfetti();
