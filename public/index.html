@@ -234,8 +234,8 @@
     /* ── CASTIGO (tarjeta ancha, resultado de la votación) ── */
     .castigo-card {
       grid-column: 1 / -1;
-      background: linear-gradient(135deg, rgba(255,61,107,0.14), rgba(255,107,53,0.14));
-      border: 1.5px solid rgba(255,61,107,0.4);
+      background: linear-gradient(135deg, rgba(255,61,107,0.18), rgba(255,107,53,0.18));
+      border: 1.5px solid rgba(255,61,107,0.5);
       border-radius: 16px;
       padding: 16px;
       text-align: center;
@@ -243,10 +243,43 @@
       flex-direction: column;
       align-items: center;
       gap: 4px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(255,61,107,0.15), inset 0 0 20px rgba(255,107,53,0.08);
+      animation: fireGlow 2.2s ease-in-out infinite;
     }
-    .castigo-emoji { font-size: 30px; }
-    .castigo-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--error); letter-spacing: 1px; }
-    .castigo-sub { font-size: 12px; color: var(--muted); }
+    .castigo-card::before {
+      content: '';
+      position: absolute;
+      inset: -50%;
+      background: linear-gradient(115deg, transparent 35%, rgba(255,107,53,0.4) 50%, transparent 65%);
+      animation: shimmer 2.4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .castigo-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 60%;
+      background: radial-gradient(ellipse at 20% 100%, rgba(255,107,53,0.35), transparent 60%),
+                  radial-gradient(ellipse at 55% 100%, rgba(255,61,107,0.4), transparent 55%),
+                  radial-gradient(ellipse at 85% 100%, rgba(255,170,0,0.3), transparent 60%);
+      animation: emberFlicker 1.8s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes fireGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(255,61,107,0.15), inset 0 0 20px rgba(255,107,53,0.08); }
+      50% { box-shadow: 0 0 30px rgba(255,107,53,0.35), inset 0 0 26px rgba(255,61,107,0.15); }
+    }
+    @keyframes emberFlicker {
+      0% { opacity: 0.7; transform: translateY(0) scaleY(1); }
+      100% { opacity: 1; transform: translateY(-3px) scaleY(1.08); }
+    }
+    .castigo-emoji { font-size: 30px; position: relative; z-index: 1; filter: drop-shadow(0 0 8px rgba(255,107,53,0.6)); }
+    .castigo-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--error); letter-spacing: 1px; position: relative; z-index: 1; text-shadow: 0 0 10px rgba(255,61,107,0.5); }
+    .castigo-sub { font-size: 12px; color: var(--muted); position: relative; z-index: 1; }
+    .castigo-tap-hint { font-size: 10px; color: rgba(255,255,255,0.5); position: relative; z-index: 1; margin-top: 2px; }
 
     .minijuego-card {
       background: var(--card);
@@ -414,24 +447,71 @@
     }
 
     /* ── OPCIONES CON IMAGEN (Gran Final) ── */
-    .img-options-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .img-option-btn {
-      padding: 0;
-      border: 2px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      background: var(--card);
-      cursor: pointer;
+    /* ── CARRUSEL (Gran Final: opción múltiple con imágenes) ── */
+    .carrusel-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 280px;
+      margin: 0 auto;
       aspect-ratio: 3/4;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+      touch-action: pan-y;
     }
-    .img-option-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .img-option-btn:disabled { cursor: not-allowed; }
-    .img-option-btn.correct { border-color: var(--success) !important; box-shadow: 0 0 0 2px var(--success); }
-    .img-option-btn.wrong { border-color: var(--error) !important; box-shadow: 0 0 0 2px var(--error); opacity: 0.6; }
+    .carrusel-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: outline 0.2s;
+    }
+    .carrusel-label {
+      position: absolute;
+      top: 10px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      z-index: 2;
+      letter-spacing: 0.5px;
+    }
+    .carrusel-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.5);
+      border: none;
+      color: white;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      font-size: 22px;
+      cursor: pointer;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .carrusel-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+    .carrusel-arrow.left { left: 8px; }
+    .carrusel-arrow.right { right: 8px; }
+    .carrusel-dots {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .carrusel-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.2s;
+    }
+    .carrusel-dot.active { background: var(--accent); }
 
     /* ── CANCIONES ── */
     .audio-player {
@@ -659,6 +739,69 @@
     .winner-score span { color: var(--gold); font-weight: 700; font-size: 20px; }
 
     /* ── TOAST ── */
+    /* ── LIGHTBOX (foto en grande) ── */
+    .lightbox-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .lightbox-overlay.show { display: flex; }
+    .lightbox-overlay img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 8px;
+      object-fit: contain;
+    }
+    .foto-zoomable { cursor: zoom-in; }
+    .foto-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* ── EASTER EGG CASTIGO ── */
+    .castigo-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .castigo-modal-overlay.show { display: flex; }
+    .castigo-modal-card {
+      background: linear-gradient(160deg, #1c1015, var(--card));
+      border: 1.5px solid rgba(255,61,107,0.5);
+      border-radius: 20px;
+      padding: 28px 24px;
+      text-align: center;
+      max-width: 320px;
+      box-shadow: 0 0 40px rgba(255,61,107,0.25);
+    }
+    .castigo-modal-emoji { font-size: 44px; margin-bottom: 8px; }
+    .castigo-modal-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      color: var(--error);
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      text-shadow: 0 0 10px rgba(255,61,107,0.4);
+    }
+    .castigo-modal-text {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
     .toast {
       position: fixed;
       bottom: 24px;
@@ -865,6 +1008,24 @@
 </div>
 
 <!-- TOAST -->
+<!-- LIGHTBOX (ver foto en grande) -->
+<div class="lightbox-overlay" id="lightbox-overlay" onclick="cerrarImagenCompleta()">
+  <img id="lightbox-img" src="" />
+</div>
+
+<!-- EASTER EGG DEL CASTIGO -->
+<div class="castigo-modal-overlay" id="castigo-modal-overlay" onclick="cerrarCastigoModal()">
+  <div class="castigo-modal-card pop" onclick="event.stopPropagation()">
+    <div class="castigo-modal-emoji">🔥📝</div>
+    <div class="castigo-modal-title">¿En qué consiste?</div>
+    <div class="castigo-modal-text">
+      Cada uno escribe un <b>reto</b> en un papelito y lo mete en el bote.<br><br>
+      El último clasificado sacará <b>3 papeles al azar</b> de entre todos los retos... y elegirá cuál de los 3 tiene que cumplir. 😈
+    </div>
+    <button class="btn btn-primary" onclick="cerrarCastigoModal()">Entendido 🔥</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1308,10 +1469,11 @@ function actualizarMinijuegosGrid() {
 // votación sobre el castigo. No es un minijuego, es solo informativa.
 function buildCastigoCard() {
   return `
-    <div class="minijuego-card castigo-card">
+    <div class="minijuego-card castigo-card" onclick="mostrarCastigoEasterEgg()">
       <div class="castigo-emoji">🔥</div>
       <div class="castigo-title">¡Habrá castigo!</div>
       <div class="castigo-sub">La votación lo decidió: 14 a favor · 2 en contra</div>
+      <div class="castigo-tap-hint">👆 Toca para saber en qué consiste</div>
     </div>`;
 }
 
@@ -2332,8 +2494,9 @@ function renderFinalEvento(body, p, pct) {
       <div class="score-value">${puntuacionMinijuego}</div>
     </div>
     <div class="foto-container pop">
-      <img src="eventos/${p.archivo}" style="width:100%;height:100%;object-fit:cover" />
+      <img src="eventos/${p.archivo}" class="foto-zoomable" style="width:100%;height:100%;object-fit:cover" onclick="abrirImagenCompleta('eventos/${p.archivo}')" />
     </div>
+    <div class="foto-hint">🔍 Toca la foto para verla completa</div>
     <div style="text-align:center;margin:12px 0;font-size:14px;font-weight:600">${p.pregunta}</div>
     <div class="selector-wrap flex-col" style="gap:10px">
       <select id="evento-persona">
@@ -2389,8 +2552,9 @@ function renderFinalEventoTexto(body, p, pct) {
       <div class="score-value">${puntuacionMinijuego}</div>
     </div>
     <div class="foto-container pop">
-      <img src="${p.carpeta || 'eventos'}/${p.archivo}" style="width:100%;height:100%;object-fit:cover" />
+      <img src="${p.carpeta || 'eventos'}/${p.archivo}" class="foto-zoomable" style="width:100%;height:100%;object-fit:cover" onclick="abrirImagenCompleta('${p.carpeta || 'eventos'}/${p.archivo}')" />
     </div>
+    <div class="foto-hint">🔍 Toca la foto para verla completa</div>
     <div style="text-align:center;margin:12px 0;font-size:14px;font-weight:600">${p.pregunta}</div>
     <div class="selector-wrap flex-col" style="gap:10px">
       <select id="evento-persona">
@@ -2572,15 +2736,25 @@ function onCambioComboCantidad() {
     b.disabled = esCero || sinElegir;
   });
   wrap.style.opacity = (esCero || sinElegir) ? '0.4' : '1';
+
+  // Guarda cuántas opciones puede marcar como máximo (según la cantidad elegida)
+  wrap.dataset.max = sinElegir ? '' : sel.value;
 }
 
 function toggleComboMulti(i) {
   const btn = document.getElementById(`combo-multi-${i}`);
+  const wrap = document.getElementById('combo-multi-wrap');
+  const max = parseInt(wrap.dataset.max || '0');
   if (btn.disabled) return;
+
   if (finalComboSeleccionados.has(i)) {
     finalComboSeleccionados.delete(i);
     btn.classList.remove('selected');
   } else {
+    if (finalComboSeleccionados.size >= max) {
+      showToast(`Solo puedes marcar ${max} opción${max === 1 ? '' : 'es'}`);
+      return;
+    }
     finalComboSeleccionados.add(i);
     btn.classList.add('selected');
   }
@@ -2591,6 +2765,13 @@ async function responderComboMulti(cantidadCorrectaIdx, correctasMultiIdx) {
   if (sel.value === '') { showToast('Selecciona primero la cantidad'); return; }
 
   const cantidadElegida = parseInt(sel.value);
+
+  // Si eligió más de 0, debe marcar EXACTAMENTE esa cantidad de opciones antes de confirmar
+  if (cantidadElegida > 0 && finalComboSeleccionados.size !== cantidadElegida) {
+    showToast(`Marca exactamente ${cantidadElegida} opción${cantidadElegida === 1 ? '' : 'es'} antes de confirmar`);
+    return;
+  }
+
   const elegidos = [...finalComboSeleccionados].sort();
   const correctos = [...correctasMultiIdx].sort();
 
@@ -2615,7 +2796,13 @@ async function responderComboMulti(cantidadCorrectaIdx, correctasMultiIdx) {
 
 // ── Preguntas tipo "opción múltiple con imágenes" dentro de la Gran Final ──
 // En vez de 4 textos, se eligen entre 4 fotos (ej. "¿cuál fue tal cosa?")
+let finalCarruselIdx = 0;
+
 function renderFinalImagenes(body, p, pct) {
+  finalCarruselIdx = 0;
+  const total = p.archivos.length;
+  const carpeta = p.carpeta || 'historias';
+
   body.innerHTML = `
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
@@ -2626,22 +2813,49 @@ function renderFinalImagenes(body, p, pct) {
       <div class="question-text">${p.pregunta}</div>
       <div class="question-points" style="color:var(--error)">-${FINAL_PENALTY} pts si fallas</div>
     </div>
-    <div class="img-options-grid">
-      ${p.archivos.map((archivo, i) => `
-        <button class="img-option-btn" id="img-opt-${i}" onclick="responderImagen(${i}, ${p.r})">
-          <img src="${p.carpeta || 'historias'}/${archivo}" />
-        </button>`).join('')}
-    </div>`;
+    <div class="carrusel-wrap" id="carrusel-wrap" data-carpeta="${carpeta}" data-archivos='${JSON.stringify(p.archivos)}'>
+      <div class="carrusel-label" id="carrusel-label">Opción A</div>
+      <img id="carrusel-img" src="${carpeta}/${p.archivos[0]}" />
+      <button class="carrusel-arrow left" onclick="moverCarrusel(-1)">‹</button>
+      <button class="carrusel-arrow right" onclick="moverCarrusel(1)">›</button>
+    </div>
+    <div class="carrusel-dots" id="carrusel-dots">
+      ${p.archivos.map((_, i) => `<div class="carrusel-dot ${i === 0 ? 'active' : ''}" id="dot-${i}"></div>`).join('')}
+    </div>
+    <button class="btn btn-primary" id="carrusel-confirm-btn" style="margin-top:16px" onclick="responderImagenCarrusel(${p.r})">Elegir esta foto</button>
+    <div class="foto-hint">← Desliza o usa las flechas para ver las ${total} opciones</div>`;
+
+  // Swipe táctil básico
+  const wrap = document.getElementById('carrusel-wrap');
+  let touchStartX = null;
+  wrap.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  wrap.addEventListener('touchend', e => {
+    if (touchStartX === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartX;
+    if (diff > 40) moverCarrusel(-1);
+    else if (diff < -40) moverCarrusel(1);
+    touchStartX = null;
+  });
 }
 
-async function responderImagen(idx, correcta) {
-  const btns = document.querySelectorAll('.img-option-btn');
-  btns.forEach(b => b.disabled = true);
+function moverCarrusel(delta) {
+  const wrap = document.getElementById('carrusel-wrap');
+  const archivos = JSON.parse(wrap.dataset.archivos);
+  finalCarruselIdx = (finalCarruselIdx + delta + archivos.length) % archivos.length;
 
-  const esCorrecta = idx === correcta;
-  btns[idx].classList.add(esCorrecta ? 'correct' : 'wrong');
-  if (!esCorrecta) btns[correcta].classList.add('correct');
+  document.getElementById('carrusel-img').src = `${wrap.dataset.carpeta}/${archivos[finalCarruselIdx]}`;
+  document.getElementById('carrusel-label').textContent = `Opción ${'ABCD'[finalCarruselIdx]}`;
+  document.querySelectorAll('.carrusel-dot').forEach((d, i) => d.classList.toggle('active', i === finalCarruselIdx));
+}
 
+async function responderImagenCarrusel(correcta) {
+  const esCorrecta = finalCarruselIdx === correcta;
+
+  document.querySelectorAll('.carrusel-arrow, #carrusel-confirm-btn').forEach(b => b.disabled = true);
+  const img = document.getElementById('carrusel-img');
+  img.style.outline = esCorrecta ? '4px solid var(--success)' : '4px solid var(--error)';
+
+  showToast(esCorrecta ? '✅ ¡Correcto!' : `❌ Era la opción ${'ABCD'[correcta]}`);
   setTimeout(() => concluirPreguntaFinal(esCorrecta), 1400);
 }
 
@@ -2765,6 +2979,23 @@ async function showFinal() {
 // ══════════════════════════════════════════════
 // UTILS
 // ══════════════════════════════════════════════
+function abrirImagenCompleta(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox-overlay').classList.add('show');
+}
+
+function cerrarImagenCompleta() {
+  document.getElementById('lightbox-overlay').classList.remove('show');
+}
+
+function mostrarCastigoEasterEgg() {
+  document.getElementById('castigo-modal-overlay').classList.add('show');
+}
+
+function cerrarCastigoModal() {
+  document.getElementById('castigo-modal-overlay').classList.remove('show');
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
