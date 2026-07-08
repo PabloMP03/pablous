@@ -1012,6 +1012,17 @@
     <div class="ranking-list" id="ranking-list">
       <div class="loading"><div class="spinner"></div> Cargando...</div>
     </div>
+    <button class="btn btn-secondary" id="btn-ver-reales" style="display:none;margin-top:10px;font-size:12px;padding:10px" onclick="mostrarPuntuacionesReales()">🔍 Ver puntuaciones reales (admin)</button>
+  </div>
+</div>
+
+<!-- PANEL ADMIN: puntuaciones reales sin capar en 0 -->
+<div class="castigo-modal-overlay" id="reales-modal-overlay" onclick="cerrarPuntuacionesReales()">
+  <div class="castigo-modal-card pop" onclick="event.stopPropagation()" style="max-width:360px">
+    <div class="castigo-modal-title" style="color:var(--accent3)">🔍 Puntuaciones reales</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Sin capar en 0 · para desempatar el último puesto</div>
+    <div id="reales-list" style="text-align:left;font-size:13px;line-height:1.8;max-height:50vh;overflow-y:auto"></div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="cerrarPuntuacionesReales()">Cerrar</button>
   </div>
 </div>
 
@@ -1332,11 +1343,11 @@ async function upsertScore(playerName, minijuego, puntuacion) {
 // La Gran Final se guarda varias veces (una tras cada pregunta), así que
 // necesita on_conflict para SOBRESCRIBIR en vez de dar error de duplicado.
 // (upsertScore de arriba se deja tal cual para el resto de minijuegos.)
-async function upsertFinalScore(playerName, puntuacion) {
+async function upsertFinalScore(playerName, puntuacion, rondaCero) {
   return await sbFetch('scores?on_conflict=player_name,minijuego', {
     method: 'POST',
     headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify({ player_name: playerName, minijuego: 'final', puntuacion })
+    body: JSON.stringify({ player_name: playerName, minijuego: 'final', puntuacion, ronda_cero: rondaCero ?? null })
   });
 }
 
@@ -1367,6 +1378,9 @@ async function actualizarRanking() {
       if (s.player_name === ADMIN) return;
       if (!porJugador[s.player_name]) porJugador[s.player_name] = { scores: {} };
       porJugador[s.player_name].scores[s.minijuego] = s.puntuacion;
+      if (s.minijuego === 'final' && s.ronda_cero !== undefined && s.ronda_cero !== null) {
+        porJugador[s.player_name].rondaCero = s.ronda_cero;
+      }
     });
 
     // Si soy yo (no admin), refrescar misScores para el grid
@@ -1375,16 +1389,23 @@ async function actualizarRanking() {
     }
 
     // Total: suma de los 5 minijuegos normales. Si ya jugó La Gran Final,
-    // su puntuación (que parte de esa suma y va restando) SUSTITUYE al total,
-    // no se suma aparte (si no, se contaría dos veces).
+    // su puntuación (que parte de esa suma y va restando, SIN CAPAR en 0
+    // internamente) SUSTITUYE al total, no se suma aparte.
     rankingData = Object.entries(porJugador)
       .map(([nombre, d]) => {
         const coreTotal = CORE_IDS.reduce((sum, id) => sum + (d.scores[id] || 0), 0);
         const total = d.scores.final !== undefined ? d.scores.final : coreTotal;
         const jugados = CORE_IDS.filter(id => d.scores[id] !== undefined).length;
-        return { nombre, total, scores: d.scores, jugados };
+        return { nombre, total, scores: d.scores, jugados, rondaCero: d.rondaCero };
       })
-      .sort((a, b) => b.total - a.total);
+      .sort((a, b) => {
+        if (b.total !== a.total) return b.total - a.total;
+        // Empate exacto (típico si ambos acaban a 0 o menos): gana quien
+        // aguantó más preguntas antes de quedarse sin puntos
+        const ra = a.rondaCero ?? Infinity;
+        const rb = b.rondaCero ?? Infinity;
+        return rb - ra;
+      });
 
     renderRanking();
   } catch (err) {
@@ -1428,7 +1449,7 @@ function renderRanking() {
           <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div>
           <div class="rank-details">${details} · ${p.jugados}/${CORE_IDS.length}</div>
         </div>
-        <div class="rank-score">${p.total}</div>
+        <div class="rank-score">${Math.max(0, p.total)}</div>
       </div>`;
   }).join('');
 }
@@ -1706,6 +1727,7 @@ async function completarEntrada(nombre) {
             if (misScores[id] === undefined) misScores[id] = 2500;
         });
         actualizarMinijuegosGrid();
+        document.getElementById('btn-ver-reales').style.display = 'block';
     }
 
     initRealtime();
@@ -1753,6 +1775,7 @@ function startMinijuego(id) {
   if (id === 'final') {
     // Punto de partida: la suma de sus 5 minijuegos ya jugados
     puntuacionMinijuego = CORE_IDS.reduce((sum, cid) => sum + (misScores[cid] || 0), 0);
+    finalRondaCero = null;
   } else {
     puntuacionMinijuego = 0;
   }
@@ -1840,7 +1863,7 @@ function renderTrivia(body, p, pct, diffLabel, diffClass) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="question-card pop">
       <span class="question-difficulty ${diffClass[p.nivel]}">${diffLabel[p.nivel]}</span>
@@ -1880,7 +1903,7 @@ function renderCancion(body, p, pct, diffLabel, diffClass) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="audio-player pop">
       <div class="audio-note">🎵</div>
@@ -1956,7 +1979,7 @@ function renderVideo(body, p, pct, diffLabel, diffClass) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="video-player pop">
       <div class="question-points" style="margin-bottom:4px">+${pts} puntos</div>
@@ -2098,7 +2121,7 @@ function renderFoto(body, p, pct, diffLabel, diffClass) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div style="text-align:center;margin-bottom:8px">
       <span class="question-difficulty ${diffClass[p.nivel]}">${diffLabel[p.nivel]}</span>
@@ -2206,7 +2229,7 @@ function renderFrase(body, p, pct, diffLabel, diffClass) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="frase-display pop">
       <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">${p.quien} dice...</div>
@@ -2399,7 +2422,7 @@ function renderFinalTrivia(body, p, pct) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Tu puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="question-card pop">
       <div class="question-text">${p.q}</div>
@@ -2449,7 +2472,7 @@ async function mostrarRankingTrasPreguntaFinal(resultado) {
       <div class="ranking-item ${esYo ? 'me' : ''}">
         <div class="rank-pos">${medals[i] || (i + 1)}</div>
         <div class="rank-info"><div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div></div>
-        <div class="rank-score">${p.total}</div>
+        <div class="rank-score">${Math.max(0, p.total)}</div>
       </div>`;
   }).join('');
 
@@ -2472,7 +2495,7 @@ async function mostrarRankingTrasPreguntaFinal(resultado) {
     ${eliminadoAviso}
     <div class="score-display">
       <div class="score-label">Tu puntuación ahora</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="ranking-title" style="font-size:20px;margin:8px 0">🏆 Ranking en vivo</div>
     <div class="ranking-list">${filas}</div>
@@ -2498,7 +2521,7 @@ async function finalizarGranFinal() {
       <div class="completado-emoji">🏁</div>
       <div class="completado-title">¡Has terminado!</div>
       <div class="score-label">Tu puntuación final</div>
-      <div class="completado-score">${puntuacionMinijuego}</div>
+      <div class="completado-score">${Math.max(0, puntuacionMinijuego)}</div>
       <div style="color:var(--muted);font-size:14px;margin:12px 0 20px">
         El ganador se anunciará cuando todo el mundo haya terminado 👀
       </div>
@@ -2514,16 +2537,24 @@ async function finalizarGranFinal() {
 // progreso y mostrar el ranking en vivo con el botón de continuar).
 // resultado puede ser: true (correcta, 0 pts) | 'parcial' (acertó solo una
 // de las dos partes, -625) | false (falló las dos, -1250)
+let finalRondaCero = null; // en qué pregunta (1-10) se quedó a 0 o menos, si le pasa
+
 async function concluirPreguntaFinal(resultado) {
   let penalizacion = 0;
   if (resultado === 'parcial') penalizacion = Math.round(FINAL_PENALTY / 2);
   else if (resultado === false) penalizacion = FINAL_PENALTY;
 
   if (penalizacion > 0) {
-    puntuacionMinijuego = Math.max(0, puntuacionMinijuego - penalizacion);
+    // OJO: aquí NO se capa en 0. Se guarda el valor real (puede ir a negativo)
+    // para poder desempatar sin ambigüedad a quienes lleguen a "0 puntos".
+    // En pantalla siempre se enseña Math.max(0, ...) para que nadie vea negativos.
+    puntuacionMinijuego -= penalizacion;
+    if (puntuacionMinijuego <= 0 && finalRondaCero === null) {
+      finalRondaCero = preguntaIdx + 1; // nº de pregunta (1-indexado) en la que cayó
+    }
   }
   try {
-    await upsertFinalScore(jugadorActual, puntuacionMinijuego);
+    await upsertFinalScore(jugadorActual, puntuacionMinijuego, finalRondaCero);
   } catch (err) {
     console.error('Error guardando progreso de la Gran Final:', err);
     showToast('⚠️ No se pudo guardar tu progreso, sigue jugando');
@@ -2551,7 +2582,7 @@ function renderFinalFrase(body, p, pct) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Tu puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="frase-display pop">
       <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">${p.quien} dijo...</div>
@@ -2576,7 +2607,7 @@ function renderFinalEvento(body, p, pct) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Tu puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="foto-container pop">
       <img src="eventos/${p.archivo}" class="foto-zoomable" style="width:100%;height:100%;object-fit:cover" onclick="abrirImagenCompleta('eventos/${p.archivo}')" />
@@ -2634,7 +2665,7 @@ function renderFinalEventoTexto(body, p, pct) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Tu puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="foto-container pop">
       <img src="${p.carpeta || 'eventos'}/${p.archivo}" class="foto-zoomable" style="width:100%;height:100%;object-fit:cover" onclick="abrirImagenCompleta('${p.carpeta || 'eventos'}/${p.archivo}')" />
@@ -2693,7 +2724,7 @@ function renderFinalVideo(body, p, pct) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Tu puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="video-player pop">
       <div class="video-wrap">
@@ -2788,7 +2819,7 @@ function renderFinalComboMulti(body, p, pct) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Tu puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="question-card pop">
       <div class="question-text">${p.pregunta}</div>
@@ -2894,7 +2925,7 @@ function renderFinalImagenes(body, p, pct) {
     <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
     <div class="score-display">
       <div class="score-label">Tu puntuación</div>
-      <div class="score-value">${puntuacionMinijuego}</div>
+      <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="question-card pop">
       <div class="question-text">${p.pregunta}</div>
@@ -3053,7 +3084,7 @@ function mostrarPopupGanador() {
   }).join('<br>');
 
   document.getElementById('ganador-popup-nombre').textContent = ganador.nombre;
-  document.getElementById('ganador-popup-total').innerHTML = `Total: <b style="color:var(--gold)">${ganador.total} pts</b>`;
+  document.getElementById('ganador-popup-total').innerHTML = `Total: <b style="color:var(--gold)">${Math.max(0, ganador.total)} pts</b>`;
   document.getElementById('ganador-popup-detalles').innerHTML = detalles;
   document.getElementById('ganador-popup-overlay').classList.add('show');
   lanzarConfetti();
@@ -3061,6 +3092,36 @@ function mostrarPopupGanador() {
 
 function cerrarPopupGanador() {
   document.getElementById('ganador-popup-overlay').classList.remove('show');
+}
+
+// Panel solo-admin: muestra las puntuaciones reales (sin capar en 0), de
+// peor a mejor, para poder desempatar el último puesto sin dudas.
+async function mostrarPuntuacionesReales() {
+  await actualizarRanking();
+
+  const ordenados = [...rankingData].sort((a, b) => {
+    if (a.total !== b.total) return a.total - b.total; // ascendente: el peor primero
+    const ra = a.rondaCero ?? Infinity;
+    const rb = b.rondaCero ?? Infinity;
+    return ra - rb;
+  });
+
+  const list = document.getElementById('reales-list');
+  list.innerHTML = ordenados.map((p, i) => {
+    const color = p.total <= 0 ? 'var(--error)' : 'var(--text)';
+    const rondaInfo = p.rondaCero ? ` · cayó a 0 en la pregunta ${p.rondaCero}/10` : '';
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
+      <b>${i + 1}. ${p.nombre}</b>${p.nombre === jugadorActual ? ' (tú)' : ''}<br>
+      <span style="color:${color};font-weight:700">${p.total} pts</span>
+      <span style="color:var(--muted);font-size:11px">${rondaInfo}</span>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted)">Nadie ha jugado todavía</div>';
+
+  document.getElementById('reales-modal-overlay').classList.add('show');
+}
+
+function cerrarPuntuacionesReales() {
+  document.getElementById('reales-modal-overlay').classList.remove('show');
 }
 
 // Pantalla de ranking (provisional mientras falte gente por terminar la
@@ -3085,7 +3146,7 @@ async function showFinal() {
         <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div>
         <div class="rank-details">${MINIJUEGOS_CONFIG.map(m => `${m.emoji}${p.scores[m.id] ?? '—'}`).join(' ')}</div>
       </div>
-      <div class="rank-score">${p.total}</div>
+      <div class="rank-score">${Math.max(0, p.total)}</div>
     </div>`;
   }).join('');
 
