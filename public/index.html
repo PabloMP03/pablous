@@ -333,8 +333,6 @@
     }
     .ranking-item.me { border-color: var(--accent); background: rgba(255,61,107,0.05); }
     .ranking-item.first { border-color: var(--gold); background: rgba(255,215,0,0.05); }
-    .ranking-item.completo { border-color: var(--accent3); box-shadow: 0 0 0 1px rgba(0,212,255,0.15) inset; }
-    .completo-tag { color: var(--accent3); font-size: 10px; font-weight: 800; letter-spacing: 0.3px; }
     .rank-pos { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--muted); width: 32px; text-align: center; }
     .rank-pos.gold { color: var(--gold); }
     .rank-pos.silver { color: #c0c0c0; }
@@ -726,19 +724,46 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .winner-card {
-      background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,107,53,0.1));
+    .final-note {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 4px;
+    }
+
+    /* ── POPUP GANADOR (Gran Final, cuando todos terminan) ── */
+    .ganador-popup-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 2100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .ganador-popup-overlay.show { display: flex; }
+    .ganador-popup-card {
+      background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,107,53,0.12));
       border: 2px solid var(--gold);
       border-radius: 20px;
-      padding: 24px;
+      padding: 28px 24px;
       text-align: center;
       width: 100%;
       max-width: 340px;
+      box-shadow: 0 0 40px rgba(255,215,0,0.25);
     }
-    .winner-emoji { font-size: 56px; margin-bottom: 8px; }
-    .winner-name { font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: var(--gold); }
-    .winner-score { font-size: 14px; color: var(--muted); margin-top: 4px; }
-    .winner-score span { color: var(--gold); font-weight: 700; font-size: 20px; }
+    .ganador-popup-emoji { font-size: 52px; margin-bottom: 4px; }
+    .ganador-popup-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--gold); letter-spacing: 1px; }
+    .ganador-popup-nombre { font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: var(--gold); margin-top: 4px; }
+    .ganador-popup-total { font-size: 14px; color: var(--muted); margin-top: 2px; }
+    .ganador-popup-detalles { font-size: 13px; color: var(--muted); margin-top: 14px; line-height: 2; text-align: left; }
 
     /* ── TOAST ── */
     /* ── LIGHTBOX (foto en grande) ── */
@@ -1003,13 +1028,25 @@
 
 <!-- ══════════════ PANTALLA FINAL ══════════════ -->
 <div id="screen-final" class="screen">
-  <div class="final-title">🏆 Ganador 🏆</div>
-  <div class="winner-card" id="winner-card"><!-- generado --></div>
+  <div class="final-title">📊 Clasificación</div>
+  <div class="final-note" id="final-note"></div>
   <div class="ranking-section w-full" style="max-width:420px">
-    <div class="ranking-title">Clasificación Final</div>
+    <div class="ranking-title">Ranking</div>
     <div class="ranking-list" id="final-ranking-list"><!-- generado --></div>
   </div>
   <button class="btn btn-secondary" onclick="showScreen('lobby')" style="max-width:420px">Volver al lobby</button>
+</div>
+
+<!-- POPUP GANADOR (aparece solo cuando TODOS han terminado La Gran Final) -->
+<div class="ganador-popup-overlay" id="ganador-popup-overlay">
+  <div class="ganador-popup-card pop" onclick="event.stopPropagation()">
+    <div class="ganador-popup-emoji">🏆</div>
+    <div class="ganador-popup-title">¡Tenemos ganador!</div>
+    <div class="ganador-popup-nombre" id="ganador-popup-nombre"></div>
+    <div class="ganador-popup-total" id="ganador-popup-total"></div>
+    <div class="ganador-popup-detalles" id="ganador-popup-detalles"></div>
+    <button class="btn btn-primary" style="margin-top:20px" onclick="cerrarPopupGanador()">🎉 Genial</button>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -1315,6 +1352,7 @@ function initRealtime() {
     if (document.getElementById('screen-lobby').classList.contains('active') ||
         document.getElementById('screen-final').classList.contains('active')) {
       await actualizarRanking();
+      if (todosHanTerminado()) mostrarPopupGanador();
     }
   }, 10000);
 }
@@ -1379,8 +1417,7 @@ function renderRanking() {
   const medals = ['🥇','🥈','🥉'];
   list.innerHTML = rankingData.map((p, i) => {
     const esYo = p.nombre === jugadorActual;
-    const completo = p.jugados === CORE_IDS.length;
-    const clases = `ranking-item ${esYo ? 'me' : ''} ${i === 0 ? 'first' : ''} ${completo ? 'completo' : ''}`;
+    const clases = `ranking-item ${esYo ? 'me' : ''} ${i === 0 ? 'first' : ''}`;
     const posClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
     const details = MINIJUEGOS_CONFIG.map(m => {
       const sc = p.scores[m.id];
@@ -1390,7 +1427,7 @@ function renderRanking() {
       <div class="${clases}">
         <div class="rank-pos ${posClass}">${medals[i] || (i+1)}</div>
         <div class="rank-info">
-          <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}${completo ? ' <span class="completo-tag">✓ completo</span>' : ''}</div>
+          <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div>
           <div class="rank-details">${details} · ${p.jugados}/${CORE_IDS.length}</div>
         </div>
         <div class="rank-score">${p.total}</div>
@@ -2437,7 +2474,23 @@ function siguienteFinalPregunta() {
 
 async function finalizarGranFinal() {
   misScores['final'] = puntuacionMinijuego;
-  await showFinal();
+  await actualizarRanking(); // refresca ya, por si eres el último en terminar
+
+  const body = document.getElementById('mj-body');
+  body.innerHTML = `
+    <div class="completado-overlay pop">
+      <div class="completado-emoji">🏁</div>
+      <div class="completado-title">¡Has terminado!</div>
+      <div class="score-label">Tu puntuación final</div>
+      <div class="completado-score">${puntuacionMinijuego}</div>
+      <div style="color:var(--muted);font-size:14px;margin:12px 0 20px">
+        El ganador se anunciará cuando todo el mundo haya terminado 👀
+      </div>
+      <button class="btn btn-primary" onclick="showFinal()">Ver ranking provisional 📊</button>
+    </div>`;
+
+  // Por si has sido tú quien acaba de completar el último hueco que faltaba
+  if (todosHanTerminado()) mostrarPopupGanador();
 }
 
 // Helper compartido: lo usan tanto las preguntas tipo trivia como las tipo
@@ -2963,33 +3016,56 @@ function showCompletado(id) {
   showScreen('minijuego');
 }
 
+// Comprueba si TODOS los que han jugado algo ya tienen puntuación de la
+// Gran Final (es decir, ya no queda nadie a medias)
+function todosHanTerminado() {
+  if (!rankingData.length) return false;
+  return rankingData.every(p => p.scores.final !== undefined);
+}
+
+let popupGanadorMostrado = false;
+
+function mostrarPopupGanador() {
+  if (popupGanadorMostrado) return;
+  const ganador = rankingData[0];
+  if (!ganador) return;
+  popupGanadorMostrado = true;
+
+  const detalles = MINIJUEGOS_CONFIG.map(m => {
+    const sc = ganador.scores[m.id];
+    return `${m.emoji} ${m.nombre}: <strong>${sc ?? '—'}</strong>`;
+  }).join('<br>');
+
+  document.getElementById('ganador-popup-nombre').textContent = ganador.nombre;
+  document.getElementById('ganador-popup-total').innerHTML = `Total: <b style="color:var(--gold)">${ganador.total} pts</b>`;
+  document.getElementById('ganador-popup-detalles').innerHTML = detalles;
+  document.getElementById('ganador-popup-overlay').classList.add('show');
+  lanzarConfetti();
+}
+
+function cerrarPopupGanador() {
+  document.getElementById('ganador-popup-overlay').classList.remove('show');
+}
+
+// Pantalla de ranking (provisional mientras falte gente por terminar la
+// Gran Final; el ganador "oficial" solo se anuncia con el popup de arriba)
 async function showFinal() {
   await actualizarRanking();
 
-  const ganador = rankingData[0];
-  const wCard = document.getElementById('winner-card');
-  if (ganador) {
-    const detalles = MINIJUEGOS_CONFIG.map(m => {
-      const sc = ganador.scores[m.id];
-      return `${m.emoji} ${m.nombre}: <strong>${sc ?? '—'}</strong>`;
-    }).join('<br>');
-    wCard.innerHTML = `
-      <div class="winner-emoji">🥇</div>
-      <div class="winner-name">${ganador.nombre}</div>
-      <div class="winner-score">Total: <span>${ganador.total} pts</span></div>
-      <div style="font-size:13px;color:var(--muted);margin-top:12px;line-height:2">${detalles}</div>`;
-  }
+  const nota = document.getElementById('final-note');
+  nota.textContent = todosHanTerminado()
+    ? '✅ Todo el mundo ha terminado La Gran Final'
+    : '⏳ Ranking provisional: aún falta gente por terminar La Gran Final';
 
   const fList = document.getElementById('final-ranking-list');
   const medals = ['🥇','🥈','🥉'];
   fList.innerHTML = rankingData.map((p, i) => {
     const esYo = p.nombre === jugadorActual;
-    const completo = p.jugados === CORE_IDS.length;
     return `
-    <div class="ranking-item ${esYo ? 'me' : ''} ${completo ? 'completo' : ''}">
+    <div class="ranking-item ${esYo ? 'me' : ''}">
       <div class="rank-pos">${medals[i] || (i+1)}</div>
       <div class="rank-info">
-        <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}${completo ? ' <span class="completo-tag">✓ completo</span>' : ''}</div>
+        <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div>
         <div class="rank-details">${MINIJUEGOS_CONFIG.map(m => `${m.emoji}${p.scores[m.id] ?? '—'}`).join(' ')}</div>
       </div>
       <div class="rank-score">${p.total}</div>
@@ -2997,7 +3073,8 @@ async function showFinal() {
   }).join('');
 
   showScreen('final');
-  lanzarConfetti();
+
+  if (todosHanTerminado()) mostrarPopupGanador();
 }
 
 // ══════════════════════════════════════════════
