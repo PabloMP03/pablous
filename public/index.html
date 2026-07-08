@@ -928,6 +928,9 @@
         <option>Roberto</option>
         <option>Sofia</option>
         <option>Wili</option>
+        <option>Prueba 1</option>
+        <option>Prueba 2</option>
+        <option>Prueba 3</option>
       </select>
     </div>
     <button class="btn btn-primary" onclick="entrar()">Entrar al juego 🎮</button>
@@ -1214,8 +1217,8 @@ const PUNTOS = { facil: 250, medio: 500, dificil: 750, muydificil: 1000 };
 let jugadorActual = '';
 const ADMIN = "Pablo";
 // Perfiles de PRUEBA: juegos desbloqueados aunque no sea la fecha + repetición libre.
-// ⚠️ Perfiles de prueba: vacío en la versión final
-const TESTERS = [];
+// ⚠️ Antes de la fiesta, vacía esta lista para que nadie tenga ventaja
+const TESTERS = ['Prueba 1', 'Prueba 2', 'Prueba 3'];
 function esPrueba(nombre) { return nombre === ADMIN || TESTERS.includes(nombre); }
 let misScores = {};
 let rankingData = [];
