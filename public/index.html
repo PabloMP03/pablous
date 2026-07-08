@@ -280,6 +280,7 @@
     .castigo-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--error); letter-spacing: 1px; position: relative; z-index: 1; text-shadow: 0 0 10px rgba(255,61,107,0.5); }
     .castigo-sub { font-size: 12px; color: var(--muted); position: relative; z-index: 1; }
     .castigo-tap-hint { font-size: 10px; color: rgba(255,255,255,0.5); position: relative; z-index: 1; margin-top: 2px; }
+    .castigo-progreso { font-size: 11px; color: rgba(255,255,255,0.75); font-weight: 700; position: relative; z-index: 1; margin-top: 3px; }
 
     .minijuego-card {
       background: var(--card);
@@ -1530,18 +1531,18 @@ function actualizarMinijuegosGrid() {
 
 // 7ª tarjeta, ancha (ocupa las dos columnas): resultado ya cerrado de la
 // votación sobre el castigo. No es un minijuego, es solo informativa.
-// El 18 a las 00:15 (15 min después de desbloquearse La Gran Final) se
-// revela la descripción completa del castigo. Hasta entonces solo hay pista.
-const CASTIGO_REVEAL_DATE = new Date('2026-07-18T00:15:00+02:00');
-
+// La descripción completa del castigo se revela cuando TODOS los que han
+// jugado algo hayan terminado La Gran Final (misma condición que el popup
+// del ganador). Hasta entonces solo se ve la pista enigmática.
 function buildCastigoCard() {
-  const revelado = new Date() >= CASTIGO_REVEAL_DATE;
-  const cd = revelado ? '' : tiempoHasta(CASTIGO_REVEAL_DATE);
+  const revelado = todosHanTerminado();
+  const terminados = rankingData.filter(p => p.scores.final !== undefined).length;
+  const totalJugadores = rankingData.length;
 
   const hintHtml = revelado
     ? `<div class="castigo-tap-hint">👆 Toca para ver de qué va</div>`
-    : `<div class="castigo-tap-hint">👆 Toca para una pista...</div>
-       <div class="countdown" id="cd-castigo-reveal">⏳ ${cd || ''}</div>`;
+    : `<div class="castigo-tap-hint">🔒 Se revela cuando todos terminen La Gran Final</div>
+       <div class="castigo-progreso">${terminados}/${totalJugadores} han terminado</div>`;
 
   return `
     <div class="minijuego-card castigo-card" onclick="mostrarCastigoEasterEgg()">
@@ -1565,12 +1566,6 @@ function tickCountdowns() {
       else necesitaRepintar = true; // acaba de desbloquearse
     }
   });
-  const cdCastigo = document.getElementById('cd-castigo-reveal');
-  if (cdCastigo) {
-    const t = tiempoHasta(CASTIGO_REVEAL_DATE);
-    if (t) cdCastigo.textContent = `⏳ ${t}`;
-    else necesitaRepintar = true; // ya se puede revelar
-  }
   if (necesitaRepintar) actualizarMinijuegosGrid();
 }
 setInterval(tickCountdowns, 1000);
@@ -3168,7 +3163,7 @@ function cerrarImagenCompleta() {
 }
 
 function mostrarCastigoEasterEgg() {
-  const revelado = new Date() >= CASTIGO_REVEAL_DATE;
+  const revelado = todosHanTerminado();
 
   const emoji = document.getElementById('castigo-modal-emoji');
   const title = document.getElementById('castigo-modal-title');
