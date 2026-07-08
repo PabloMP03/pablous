@@ -1016,13 +1016,14 @@
 <!-- EASTER EGG DEL CASTIGO -->
 <div class="castigo-modal-overlay" id="castigo-modal-overlay" onclick="cerrarCastigoModal()">
   <div class="castigo-modal-card pop" onclick="event.stopPropagation()">
-    <div class="castigo-modal-emoji">🔥📝</div>
-    <div class="castigo-modal-title">¿En qué consiste?</div>
+    <div class="castigo-modal-emoji">🔥🤫</div>
+    <div class="castigo-modal-title">Pista...</div>
     <div class="castigo-modal-text">
-      Cada uno escribe un <b>reto</b> en un papelito y lo mete en el bote.<br><br>
-      El último clasificado sacará <b>3 papeles al azar</b> de entre todos los retos... y elegirá cuál de los 3 tiene que cumplir. 😈
+      Todos vais a aportar vuestro granito de fuego, en secreto.<br><br>
+      El día de la fiesta, el destino le pondrá al perdedor <b>varias opciones</b> sobre la mesa... y tendrá que elegir una. 😈<br><br>
+      <span style="opacity:0.6;font-size:12px">(No se libra nadie de participar)</span>
     </div>
-    <button class="btn btn-primary" onclick="cerrarCastigoModal()">Entendido 🔥</button>
+    <button class="btn btn-primary" onclick="cerrarCastigoModal()">Uy... 🔥</button>
   </div>
 </div>
 
@@ -1473,7 +1474,7 @@ function buildCastigoCard() {
       <div class="castigo-emoji">🔥</div>
       <div class="castigo-title">¡Habrá castigo!</div>
       <div class="castigo-sub">La votación lo decidió: 14 a favor · 2 en contra</div>
-      <div class="castigo-tap-hint">👆 Toca para saber en qué consiste</div>
+      <div class="castigo-tap-hint">👆 Toca para una pista...</div>
     </div>`;
 }
 
@@ -2379,6 +2380,7 @@ async function mostrarRankingTrasPreguntaFinal(resultado) {
   await actualizarRanking(); // refresca rankingData (ya incluye mi puntuación recién guardada)
 
   const esUltima = preguntaIdx >= preguntasActuales.length - 1;
+  const eliminado = puntuacionMinijuego <= 0;
   const body = document.getElementById('mj-body');
   const medals = ['🥇', '🥈', '🥉'];
 
@@ -2399,19 +2401,27 @@ async function mostrarRankingTrasPreguntaFinal(resultado) {
       ? `⚠️ Casi... acertaste solo la mitad · -${Math.round(FINAL_PENALTY / 2)} pts`
       : `❌ Fallaste · -${FINAL_PENALTY} pts`;
 
+  const finToca = esUltima || eliminado;
+  const eliminadoAviso = eliminado
+    ? `<div class="result-banner wrong" style="margin-top:10px">💀 Te has quedado a 0 puntos, no puedes seguir contestando</div>`
+    : '';
+
   body.innerHTML = `
     <div class="result-banner ${bannerClass}">
       ${bannerText}
     </div>
+    ${eliminadoAviso}
     <div class="score-display">
       <div class="score-label">Tu puntuación ahora</div>
       <div class="score-value">${puntuacionMinijuego}</div>
     </div>
     <div class="ranking-title" style="font-size:20px;margin:8px 0">🏆 Ranking en vivo</div>
     <div class="ranking-list">${filas}</div>
-    <button class="btn btn-primary" style="margin-top:16px" onclick="${esUltima ? 'finalizarGranFinal()' : 'siguienteFinalPregunta()'}">
-      ${esUltima ? 'Ver clasificación final 🏆' : 'Siguiente pregunta →'}
-    </button>`;
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn btn-primary" style="max-width:340px" onclick="${finToca ? 'finalizarGranFinal()' : 'siguienteFinalPregunta()'}">
+        ${finToca ? 'Ver clasificación final 🏆' : 'Siguiente pregunta →'}
+      </button>
+    </div>`;
 }
 
 function siguienteFinalPregunta() {
@@ -2716,7 +2726,9 @@ function renderFinalComboMulti(body, p, pct) {
     </div>
     <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px">${p.etiquetaMulti || 'Selecciona una o varias opciones'} (puedes elegir varias)</div>
     <div class="options-grid" id="combo-multi-wrap">${trofeosHtml}</div>
-    <button class="btn btn-primary" style="margin-top:16px" onclick="responderComboMulti(${p.cantidadCorrectaIdx}, [${p.correctasMultiIdx.join(',')}])">Confirmar</button>
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn btn-primary" style="max-width:340px" onclick="responderComboMulti(${p.cantidadCorrectaIdx}, [${p.correctasMultiIdx.join(',')}])">Confirmar</button>
+    </div>
     <div style="font-size:12px;color:var(--error);text-align:center;margin-top:10px">-${FINAL_PENALTY} pts si fallas</div>`;
 
   // Al principio, sin cantidad elegida, el segundo combo está deshabilitado
@@ -2822,7 +2834,9 @@ function renderFinalImagenes(body, p, pct) {
     <div class="carrusel-dots" id="carrusel-dots">
       ${p.archivos.map((_, i) => `<div class="carrusel-dot ${i === 0 ? 'active' : ''}" id="dot-${i}"></div>`).join('')}
     </div>
-    <button class="btn btn-primary" id="carrusel-confirm-btn" style="margin-top:16px" onclick="responderImagenCarrusel(${p.r})">Elegir esta foto</button>
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn btn-primary" id="carrusel-confirm-btn" style="max-width:340px" onclick="responderImagenCarrusel(${p.r})">Elegir esta foto</button>
+    </div>
     <div class="foto-hint">← Desliza o usa las flechas para ver las ${total} opciones</div>`;
 
   // Swipe táctil básico
