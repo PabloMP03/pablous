@@ -231,83 +231,22 @@
       max-width: 420px;
     }
 
-    /* ── ENCUESTA ── */
-    .encuesta-card {
-      width: 100%;
-      max-width: 420px;
-      background: var(--card);
-      border: 1.5px solid var(--border);
+    /* ── CASTIGO (tarjeta ancha, resultado de la votación) ── */
+    .castigo-card {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, rgba(255,61,107,0.14), rgba(255,107,53,0.14));
+      border: 1.5px solid rgba(255,61,107,0.4);
       border-radius: 16px;
-      padding: 18px 16px;
-    }
-    .encuesta-question {
-      font-size: 14px;
-      font-weight: 700;
+      padding: 16px;
       text-align: center;
-      margin-bottom: 14px;
-      line-height: 1.4;
-    }
-    .encuesta-buttons {
-      display: flex;
-      gap: 10px;
-    }
-    .encuesta-btn { max-width: none; flex: 1; padding: 12px; font-size: 14px; }
-    .encuesta-result { display: flex; flex-direction: column; gap: 10px; }
-    .encuesta-row {
-      display: grid;
-      grid-template-columns: 46px 1fr 64px;
-      align-items: center;
-      gap: 10px;
-    }
-    .encuesta-label { font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
-    .encuesta-bar-wrap {
-      height: 18px;
-      background: var(--surface);
-      border-radius: 9px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    .encuesta-bar {
-      height: 100%;
-      border-radius: 9px 0 0 9px;
-      transition: width 0.5s ease;
-    }
-    .encuesta-bar.si { background: linear-gradient(90deg, var(--success), #00b85c); }
-    .encuesta-bar.no { background: linear-gradient(90deg, var(--error), #cc1f4d); }
-    .encuesta-pct { font-size: 12px; font-weight: 700; text-align: right; color: var(--text); }
-    .encuesta-total { text-align: center; font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .encuesta-voted-tag { color: var(--accent3); font-weight: 800; }
-
-    .encuesta-detalle { margin-top: 4px; }
-    .encuesta-detalle summary {
-      font-size: 11px;
-      color: var(--muted);
-      cursor: pointer;
-      text-align: center;
-      list-style: none;
-      user-select: none;
-    }
-    .encuesta-detalle summary::-webkit-details-marker { display: none; }
-    .encuesta-quien {
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid var(--border);
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 4px;
-      font-size: 11px;
-      line-height: 1.5;
-      color: var(--muted);
     }
-    .encuesta-quien b { color: var(--text); }
-    .encuesta-quien .dot {
-      display: inline-block;
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      margin-right: 4px;
-    }
-    .encuesta-quien .dot.si { background: var(--success); }
-    .encuesta-quien .dot.no { background: var(--error); }
+    .castigo-emoji { font-size: 30px; }
+    .castigo-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--error); letter-spacing: 1px; }
+    .castigo-sub { font-size: 12px; color: var(--muted); }
 
     .minijuego-card {
       background: var(--card);
@@ -457,6 +396,9 @@
     .option-btn:hover:not(:disabled) { border-color: var(--accent2); background: rgba(124,58,237,0.1); }
     .option-btn.correct { border-color: var(--success) !important; background: rgba(0,230,118,0.15) !important; color: var(--success); }
     .option-btn.wrong { border-color: var(--error) !important; background: rgba(255,61,107,0.15) !important; color: var(--error); }
+    .combo-multi-btn.selected { border-color: var(--accent2) !important; background: rgba(124,58,237,0.18) !important; }
+    .combo-multi-btn.selected .option-letter { background: var(--accent2); color: white; }
+    .combo-multi-btn:disabled { opacity: 0.5; }
     .option-btn:disabled { cursor: not-allowed; }
     .option-letter {
       width: 28px;
@@ -470,6 +412,26 @@
       font-weight: 700;
       flex-shrink: 0;
     }
+
+    /* ── OPCIONES CON IMAGEN (Gran Final) ── */
+    .img-options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .img-option-btn {
+      padding: 0;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--card);
+      cursor: pointer;
+      aspect-ratio: 3/4;
+    }
+    .img-option-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .img-option-btn:disabled { cursor: not-allowed; }
+    .img-option-btn.correct { border-color: var(--success) !important; box-shadow: 0 0 0 2px var(--success); }
+    .img-option-btn.wrong { border-color: var(--error) !important; box-shadow: 0 0 0 2px var(--error); opacity: 0.6; }
 
     /* ── CANCIONES ── */
     .audio-player {
@@ -662,6 +624,7 @@
     }
     .result-banner.correct { background: rgba(0,230,118,0.15); color: var(--success); border: 1px solid var(--success); }
     .result-banner.wrong { background: rgba(255,61,107,0.15); color: var(--error); border: 1px solid var(--error); }
+    .result-banner.partial { background: rgba(255,170,0,0.15); color: var(--medium); border: 1px solid var(--medium); }
     .result-points { font-size: 28px; font-family: 'Bebas Neue', sans-serif; }
 
     /* ── FINAL ── */
@@ -870,10 +833,6 @@
     <!-- generado por JS -->
   </div>
 
-  <div class="encuesta-card" id="encuesta-card">
-    <div class="loading"><div class="spinner"></div> Cargando encuesta...</div>
-  </div>
-
   <div class="ranking-section">
     <div class="ranking-title">🏆 Ranking</div>
     <div class="ranking-list" id="ranking-list">
@@ -919,9 +878,10 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const UNLOCK_DATES = {
   canciones: new Date('2026-07-01T00:00:00+02:00'),
   video:     new Date('2026-07-02T00:00:00+02:00'),
-  fotos:     new Date('2026-07-06T00:00:00+02:00'),
+  fotos:     new Date('2026-07-05T00:00:00+02:00'),
   frases:    new Date('2026-07-10T00:00:00+02:00'),
   trivia:    new Date('2026-07-14T00:00:00+02:00'),
+  final:     new Date('2026-07-18T00:00:00+02:00'),
 };
 
 const MINIJUEGOS_CONFIG = [
@@ -930,9 +890,43 @@ const MINIJUEGOS_CONFIG = [
   { id: 'fotos',     emoji: '📸', nombre: 'Adivina la foto'    },
   { id: 'frases',    emoji: '💬', nombre: 'Completa la frase'  },
   { id: 'trivia',    emoji: '🧠', nombre: 'Trivia'             },
+  { id: 'final',     emoji: '🏆', nombre: 'La Gran Final'      },
 ];
+// Los 5 minijuegos "normales" (sin contar La Gran Final, que no suma sino que sustituye)
+const CORE_IDS = ['canciones', 'video', 'fotos', 'frases', 'trivia'];
 
 // ── TRIVIA DATA ──
+// ── LA GRAN FINAL ──
+// 10 preguntas de tipo trivia (multiple choice). Se hacen TODAS, en orden.
+// Cada jugador empieza con la suma de sus 5 minijuegos y va PERDIENDO 1250
+// puntos por cada pregunta que falle (acertar no da puntos extra).
+// Formato: { q: 'texto', ops: ['A','B','C','D'], r: índice correcto (0-3) }
+const FINAL_PENALTY = 1250;
+// Opciones de curso para preguntas tipo "evento"
+const CURSOS_OPCIONES = ['1º ESO', '2º ESO', '3º ESO', '4º ESO', '1º Bachillerato', '2º Bachillerato'];
+
+const FINAL_QUESTIONS = [
+  { formato: 'frase', quien: 'Dani', frase: 'Ponle ___ de Lucía que se tira al collado', respuesta: 'BOZAL A LA PERRA' },
+  { formato: 'evento', archivo: 'Pablo_2Bachillerato.jpeg', pregunta: '¿De quién son estas notas y en qué curso fue?', personaCorrecta: 'Pablo', cursoCorrecta: '2º Bachillerato' },
+  { formato: 'imagenes', pregunta: '¿Cuál de estas 4 fotos fue mi primera historia en Instagram?', archivos: ['PH_Cerveza.jpeg', 'PH_Hamburguesa.jpeg', 'PH_Litro.jpeg', 'PH_Squad.jpeg'], r: 0 },
+  { q: 'Bueno _______ se ofrece en la calle para que la taladren por detrás', ops: ['Paqui', 'Ali', 'Nuria', 'AnaSanvel'], r: 3 },
+  { formato: 'imagenes', carpeta: 'fullsimios', pregunta: '¿Cuál fue la primera foto que se pasó al grupo de FULL SIMIOS?', archivos: ['PF_Botellines.jpeg', 'PF_Fran.jpeg', 'PF_Fuente.jpeg', 'PF_Kangaranga.jpeg'], r: 2 },
+  { formato: 'evento_texto', archivo: 'Fran_Nigerianos.jpeg', pregunta: '¿Quién hizo esta captura de pantalla y a quién le estaba hablando?', personaCorrecta: 'Fran', palabraClave: 'NIGERIANO' },
+  { q: '¿Quién ganó el premio al más Proxeneta del grupo en 2024?', ops: ['Roberto', 'Fran', 'Andrés', 'Dani'], r: 2 },
+  { formato: 'frase', quien: 'Ale', frase: 'Pq una camiseta de fútbol en las tías queda tan tan tan bien?!? Yo creo q es ___ le dan el toque', respuesta: 'POR LAS TETAS' },
+  { formato: 'video', archivo1: 'Video_Fin1.mp4', archivo2: 'Video_Fin2.mp4', carpeta: 'videos_final', pregunta: '¿De qué se ríen Fran y Collado?', ops: ['Sale una mierda como mi cabeza', 'Ibra tiene un moco colgandero flow Bo Chan', 'Ibra parece que va puesto de Fentanilo', 'Todas son correctas'], r: 3 },
+  {
+    formato: 'combo_multi',
+    pregunta: '¿Cuántos trofeos individuales de fútbol tengo y cuál/cuáles son?',
+    etiquetaCantidad: '¿Cuántos trofeos?',
+    cantidadOpciones: ['0', '1', '2', '3'],
+    cantidadCorrectaIdx: 1,
+    etiquetaMulti: '¿Cuál/cuáles son?',
+    opcionesMulti: ['Máximo goleador', 'Máximo asistente', 'Jugador más regular de la temporada', 'Mejor gol de la temporada'],
+    correctasMultiIdx: [2],
+  },
+];
+
 const TRIVIA = {
   facil: [
     { q: '¿Cómo se llama el equipo de Fútbol Sala de Pablo?', ops: ['Servetsa','Filo Rojo','RBDC','No juego en ningún equipo'], r: 1 },
@@ -1134,91 +1128,15 @@ async function upsertScore(playerName, minijuego, puntuacion) {
   });
 }
 
-// ══════════════════════════════════════════════
-// ENCUESTA
-// ══════════════════════════════════════════════
-async function getPollVotes() {
-  return await sbFetch('poll_votes?select=*') || [];
-}
-
-async function votarEncuesta(opcion) {
-  const buttons = document.querySelectorAll('.encuesta-btn');
-  buttons.forEach(b => b.disabled = true);
-  try {
-    await sbFetch('poll_votes?on_conflict=player_name', {
-      method: 'POST',
-      headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
-      body: JSON.stringify({ player_name: jugadorActual, voto: opcion })
-    });
-  } catch (err) {
-    console.error('Error votando:', err);
-    showToast('⚠️ No se pudo guardar tu voto, inténtalo de nuevo');
-    buttons.forEach(b => b.disabled = false);
-    return;
-  }
-  await renderEncuesta();
-}
-
-async function renderEncuesta() {
-  const el = document.getElementById('encuesta-card');
-  if (!el) return;
-
-  let votes;
-  try {
-    votes = await getPollVotes();
-  } catch (err) {
-    console.error('Error cargando encuesta:', err);
-    if (!el.dataset.cargada) {
-      el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px">No se pudo cargar la encuesta 📡</div>';
-    }
-    return;
-  }
-  el.dataset.cargada = '1';
-
-  const miVoto = votes.find(v => v.player_name === jugadorActual);
-
-  if (!miVoto) {
-    // Aún no ha votado: solo ve la pregunta y los botones, sin resultados
-    el.innerHTML = `
-      <div class="encuesta-question">🔥 ¿Ponemos castigo para el último clasificado?</div>
-      <div class="encuesta-buttons">
-        <button class="btn btn-primary encuesta-btn" onclick="votarEncuesta('si')">Sí</button>
-        <button class="btn btn-secondary encuesta-btn" onclick="votarEncuesta('no')">No</button>
-      </div>`;
-    return;
-  }
-
-  // Ya ha votado: ahora sí ve los resultados
-  const total = votes.length;
-  const siCount = votes.filter(v => v.voto === 'si').length;
-  const noCount = total - siCount;
-  const siPct = total ? Math.round((siCount / total) * 100) : 0;
-  const noPct = total ? 100 - siPct : 0;
-  const nombresSi = votes.filter(v => v.voto === 'si').map(v => v.player_name).sort();
-  const nombresNo = votes.filter(v => v.voto === 'no').map(v => v.player_name).sort();
-
-  el.innerHTML = `
-    <div class="encuesta-question">🔥 ¿Ponemos castigo para el último clasificado?</div>
-    <div class="encuesta-result">
-      <div class="encuesta-row">
-        <div class="encuesta-label">Sí ${miVoto.voto === 'si' ? '<span class="encuesta-voted-tag">· tú</span>' : ''}</div>
-        <div class="encuesta-bar-wrap"><div class="encuesta-bar si" style="width:${siPct}%"></div></div>
-        <div class="encuesta-pct">${siPct}% (${siCount})</div>
-      </div>
-      <div class="encuesta-row">
-        <div class="encuesta-label">No ${miVoto.voto === 'no' ? '<span class="encuesta-voted-tag">· tú</span>' : ''}</div>
-        <div class="encuesta-bar-wrap"><div class="encuesta-bar no" style="width:${noPct}%"></div></div>
-        <div class="encuesta-pct">${noPct}% (${noCount})</div>
-      </div>
-      <div class="encuesta-total">${total} voto${total === 1 ? '' : 's'} en total</div>
-      <details class="encuesta-detalle">
-        <summary>👀 Ver quién ha votado</summary>
-        <div class="encuesta-quien">
-          <div><span class="dot si"></span><b>Sí:</b> ${nombresSi.length ? nombresSi.join(', ') : '—'}</div>
-          <div><span class="dot no"></span><b>No:</b> ${nombresNo.length ? nombresNo.join(', ') : '—'}</div>
-        </div>
-      </details>
-    </div>`;
+// La Gran Final se guarda varias veces (una tras cada pregunta), así que
+// necesita on_conflict para SOBRESCRIBIR en vez de dar error de duplicado.
+// (upsertScore de arriba se deja tal cual para el resto de minijuegos.)
+async function upsertFinalScore(playerName, puntuacion) {
+  return await sbFetch('scores?on_conflict=player_name,minijuego', {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({ player_name: playerName, minijuego: 'final', puntuacion })
+  });
 }
 
 // ══════════════════════════════════════════════
@@ -1230,7 +1148,6 @@ function initRealtime() {
     if (document.getElementById('screen-lobby').classList.contains('active') ||
         document.getElementById('screen-final').classList.contains('active')) {
       await actualizarRanking();
-      await renderEncuesta();
     }
   }, 10000);
 }
@@ -1242,13 +1159,12 @@ async function actualizarRanking() {
   try {
     const scores = await getScores();
 
-    // Agrupar por jugador: total + desglose por minijuego (Pablo excluido = admin)
+    // Agrupar por jugador: desglose por minijuego (Pablo excluido = admin)
     const porJugador = {};
     scores.forEach(s => {
       if (s.player_name === ADMIN) return;
-      if (!porJugador[s.player_name]) porJugador[s.player_name] = { total: 0, scores: {} };
+      if (!porJugador[s.player_name]) porJugador[s.player_name] = { scores: {} };
       porJugador[s.player_name].scores[s.minijuego] = s.puntuacion;
-      porJugador[s.player_name].total += s.puntuacion;
     });
 
     // Si soy yo (no admin), refrescar misScores para el grid
@@ -1256,9 +1172,16 @@ async function actualizarRanking() {
       misScores = porJugador[jugadorActual].scores;
     }
 
-    // Array ordenado por puntuación total (mayor a menor)
+    // Total: suma de los 5 minijuegos normales. Si ya jugó La Gran Final,
+    // su puntuación (que parte de esa suma y va restando) SUSTITUYE al total,
+    // no se suma aparte (si no, se contaría dos veces).
     rankingData = Object.entries(porJugador)
-      .map(([nombre, d]) => ({ nombre, total: d.total, scores: d.scores, jugados: Object.keys(d.scores).length }))
+      .map(([nombre, d]) => {
+        const coreTotal = CORE_IDS.reduce((sum, id) => sum + (d.scores[id] || 0), 0);
+        const total = d.scores.final !== undefined ? d.scores.final : coreTotal;
+        const jugados = CORE_IDS.filter(id => d.scores[id] !== undefined).length;
+        return { nombre, total, scores: d.scores, jugados };
+      })
       .sort((a, b) => b.total - a.total);
 
     renderRanking();
@@ -1300,7 +1223,7 @@ function renderRanking() {
         <div class="rank-pos ${posClass}">${medals[i] || (i+1)}</div>
         <div class="rank-info">
           <div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div>
-          <div class="rank-details">${details} · ${p.jugados}/${MINIJUEGOS_CONFIG.length}</div>
+          <div class="rank-details">${details} · ${p.jugados}/${CORE_IDS.length}</div>
         </div>
         <div class="rank-score">${p.total}</div>
       </div>`;
@@ -1353,6 +1276,7 @@ function actualizarMinijuegosGrid() {
     // En modo prueba (admin o tester) nunca hay minijuegos "completados": se pueden rejugar
     const done = !modoPrueba && misScores[m.id] !== undefined;
     const sc = misScores[m.id];
+    const esGranFinal = m.id === 'final';
 
     let statusHtml = '';
     if (done) {
@@ -1368,7 +1292,7 @@ function actualizarMinijuegosGrid() {
     }
 
     return `
-      <div class="minijuego-card ${!unlocked ? 'locked' : ''} ${done ? 'done' : ''}"
+      <div class="minijuego-card ${esGranFinal ? 'granfinal-card' : ''} ${!unlocked ? 'locked' : ''} ${done ? 'done' : ''}"
            onclick="${unlocked ? `startMinijuego('${m.id}')` : ''}">
         ${!unlocked ? '<div class="lock-icon">🔒</div>' : ''}
         <div class="minijuego-emoji">${m.emoji}</div>
@@ -1377,34 +1301,17 @@ function actualizarMinijuegosGrid() {
       </div>`;
   }).join('');
 
-  grid.innerHTML = cardsHtml + buildPremioCard();
+  grid.innerHTML = cardsHtml + buildCastigoCard();
 }
 
-// 6ª tarjeta especial: no es un minijuego jugable todavía (está por diseñar),
-// no puntúa ni afecta al ranking. Se desbloquea el 18 de julio, día de la fiesta.
-const GRAN_FINAL_UNLOCK_DATE = new Date('2026-07-18T00:00:00+02:00');
-
-function buildPremioCard() {
-  const unlocked = new Date() >= GRAN_FINAL_UNLOCK_DATE;
-
-  if (unlocked) {
-    return `
-      <div class="minijuego-card granfinal-card done">
-        <div class="minijuego-emoji">🏆</div>
-        <div class="minijuego-name">La Gran Final</div>
-        <div class="minijuego-status">¡Ha llegado el día! 🎉</div>
-      </div>`;
-  }
-
-  const cd = tiempoHasta(GRAN_FINAL_UNLOCK_DATE);
-  const fecha = GRAN_FINAL_UNLOCK_DATE.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+// 7ª tarjeta, ancha (ocupa las dos columnas): resultado ya cerrado de la
+// votación sobre el castigo. No es un minijuego, es solo informativa.
+function buildCastigoCard() {
   return `
-    <div class="minijuego-card granfinal-card locked">
-      <div class="lock-icon">🔒</div>
-      <div class="minijuego-emoji">🏆</div>
-      <div class="minijuego-name">La Gran Final</div>
-      <div class="unlock-date">Se revela el ${fecha}</div>
-      <div class="countdown" id="cd-granfinal">⏳ ${cd || ''}</div>
+    <div class="minijuego-card castigo-card">
+      <div class="castigo-emoji">🔥</div>
+      <div class="castigo-title">¡Habrá castigo!</div>
+      <div class="castigo-sub">La votación lo decidió: 14 a favor · 2 en contra</div>
     </div>`;
 }
 
@@ -1421,12 +1328,6 @@ function tickCountdowns() {
       else necesitaRepintar = true; // acaba de desbloquearse
     }
   });
-  const elPremio = document.getElementById('cd-granfinal');
-  if (elPremio) {
-    const t = tiempoHasta(GRAN_FINAL_UNLOCK_DATE);
-    if (t) elPremio.textContent = `⏳ ${t}`;
-    else necesitaRepintar = true;
-  }
   if (necesitaRepintar) actualizarMinijuegosGrid();
 }
 setInterval(tickCountdowns, 1000);
@@ -1573,7 +1474,18 @@ async function completarEntrada(nombre) {
     document.getElementById("lobby-nombre").textContent = nombre;
     showScreen("lobby");
     await actualizarRanking();
-    await renderEncuesta();
+
+    // El admin arranca con 2500 pts en cada minijuego (12500 en total) para
+    // poder probar La Gran Final sin tener que jugarse antes los otros 5.
+    // Es solo local (nunca se guarda en Supabase ni cuenta para el ranking,
+    // ya que el admin está excluido de él).
+    if (nombre === ADMIN) {
+        CORE_IDS.forEach(id => {
+            if (misScores[id] === undefined) misScores[id] = 2500;
+        });
+        actualizarMinijuegosGrid();
+    }
+
     initRealtime();
 }
 
@@ -1596,7 +1508,6 @@ function volverLobby() {
   if (videoActual) { videoActual.pause(); videoActual = null; }
   showScreen('lobby');
   actualizarRanking();
-  renderEncuesta();
 }
 
 // ══════════════════════════════════════════════
@@ -1608,10 +1519,21 @@ function startMinijuego(id) {
     showCompletado(id);
     return;
   }
-  
+
+  if (id === 'final' && FINAL_QUESTIONS.length === 0) {
+    showToast('🏆 La Gran Final aún no tiene preguntas cargadas');
+    return;
+  }
+
   minijuegoActivo = id;
   preguntaIdx = 0;
-  puntuacionMinijuego = 0;
+
+  if (id === 'final') {
+    // Punto de partida: la suma de sus 5 minijuegos ya jugados
+    puntuacionMinijuego = CORE_IDS.reduce((sum, cid) => sum + (misScores[cid] || 0), 0);
+  } else {
+    puntuacionMinijuego = 0;
+  }
 
   const config = MINIJUEGOS_CONFIG.find(m => m.id === id);
   document.getElementById('mj-titulo').textContent = `${config.emoji} ${config.nombre}`;
@@ -1659,6 +1581,9 @@ function seleccionarPreguntas(id) {
       const idx = Math.floor(Math.random() * pool.length);
       preguntas.push({ ...pool[idx], nivel, tipo: 'frase' });
     });
+  } else if (id === 'final') {
+    // Todas las preguntas, en el orden en que están definidas (no random)
+    FINAL_QUESTIONS.forEach(q => preguntas.push({ ...q, tipo: 'final' }));
   }
 
   return preguntas;
@@ -1681,6 +1606,7 @@ function renderPregunta() {
   else if (p.tipo === 'video') renderVideo(body, p, pct, diffLabel, diffClass);
   else if (p.tipo === 'foto') renderFoto(body, p, pct, diffLabel, diffClass);
   else if (p.tipo === 'frase') renderFrase(body, p, pct, diffLabel, diffClass);
+  else if (p.tipo === 'final') renderFinalPregunta(body, p, pct);
 }
 
 // ══════════════════════════════════════════════
@@ -2051,6 +1977,7 @@ function renderFrase(body, p, pct, diffLabel, diffClass) {
     completado: false,
     pts: PUNTOS[p.nivel],
     pista: p.pista,
+    modoFinal: false,
   };
 
   body.innerHTML = `
@@ -2193,6 +2120,21 @@ function evaluarIntento() {
   currentInput = '';
 
   const esCorrecta = resultado.every(r => r === 'correct');
+
+  if (wordleState.modoFinal) {
+    // Flujo especial de la Gran Final: penaliza, guarda y muestra ranking en vivo
+    if (esCorrecta) {
+      wordleState.completado = true;
+      showToast('✅ ¡Correcto!');
+      setTimeout(() => concluirPreguntaFinal(true), 1200);
+    } else if (wordleState.intentoActual >= 6) {
+      wordleState.completado = true;
+      showToast(`❌ Era "${wordleState.respuestaOriginal}"`);
+      setTimeout(() => concluirPreguntaFinal(false), 1600);
+    }
+    return;
+  }
+
   if (esCorrecta) {
     const pts = Math.round(wordleState.pts * (1 - (wordleState.intentoActual - 1) * 0.15));
     puntuacionMinijuego += Math.max(pts, 50);
@@ -2209,7 +2151,498 @@ function evaluarIntento() {
 function skipFrase() {
   wordleState.completado = true;
   showToast(`Era "${wordleState.respuestaOriginal}"`);
-  setTimeout(() => siguientePregunta(), 1500);
+  if (wordleState.modoFinal) {
+    setTimeout(() => concluirPreguntaFinal(false), 1200);
+  } else {
+    setTimeout(() => siguientePregunta(), 1500);
+  }
+}
+
+// ══════════════════════════════════════════════
+// LA GRAN FINAL
+// ══════════════════════════════════════════════
+// Dispatcher: la Gran Final puede mezclar formatos (trivia, frases...)
+function renderFinalPregunta(body, p, pct) {
+  if (p.formato === 'frase') renderFinalFrase(body, p, pct);
+  else if (p.formato === 'evento') renderFinalEvento(body, p, pct);
+  else if (p.formato === 'evento_texto') renderFinalEventoTexto(body, p, pct);
+  else if (p.formato === 'imagenes') renderFinalImagenes(body, p, pct);
+  else if (p.formato === 'video') renderFinalVideo(body, p, pct);
+  else if (p.formato === 'combo_multi') renderFinalComboMulti(body, p, pct);
+  else renderFinalTrivia(body, p, pct);
+}
+
+function renderFinalTrivia(body, p, pct) {
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Tu puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="question-card pop">
+      <div class="question-text">${p.q}</div>
+      <div class="question-points" style="color:var(--error)">-${FINAL_PENALTY} pts si fallas</div>
+    </div>
+    <div class="options-grid">
+      ${p.ops.map((op, i) => `
+        <button class="option-btn" onclick="responderFinal(${i}, ${p.r})">
+          <span class="option-letter">${'ABCD'[i]}</span>${op}
+        </button>`).join('')}
+    </div>`;
+}
+
+async function responderFinal(idx, correcta) {
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const esCorrecta = idx === correcta;
+  btns[idx].classList.add(esCorrecta ? 'correct' : 'wrong');
+  if (!esCorrecta) {
+    btns[correcta].classList.add('correct');
+    puntuacionMinijuego = Math.max(0, puntuacionMinijuego - FINAL_PENALTY);
+  }
+
+  // Se guarda tras CADA pregunta para que todos vean el ranking actualizarse en vivo
+  try {
+    await upsertFinalScore(jugadorActual, puntuacionMinijuego);
+  } catch (err) {
+    console.error('Error guardando progreso de la Gran Final:', err);
+    showToast('⚠️ No se pudo guardar tu progreso, sigue jugando');
+  }
+
+  await mostrarRankingTrasPreguntaFinal(esCorrecta);
+}
+
+async function mostrarRankingTrasPreguntaFinal(resultado) {
+  await actualizarRanking(); // refresca rankingData (ya incluye mi puntuación recién guardada)
+
+  const esUltima = preguntaIdx >= preguntasActuales.length - 1;
+  const body = document.getElementById('mj-body');
+  const medals = ['🥇', '🥈', '🥉'];
+
+  const filas = rankingData.map((p, i) => {
+    const esYo = p.nombre === jugadorActual;
+    return `
+      <div class="ranking-item ${esYo ? 'me' : ''}">
+        <div class="rank-pos">${medals[i] || (i + 1)}</div>
+        <div class="rank-info"><div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div></div>
+        <div class="rank-score">${p.total}</div>
+      </div>`;
+  }).join('');
+
+  const bannerClass = resultado === true ? 'correct' : resultado === 'parcial' ? 'partial' : 'wrong';
+  const bannerText = resultado === true
+    ? '✅ ¡Correcto!'
+    : resultado === 'parcial'
+      ? `⚠️ Casi... acertaste solo la mitad · -${Math.round(FINAL_PENALTY / 2)} pts`
+      : `❌ Fallaste · -${FINAL_PENALTY} pts`;
+
+  body.innerHTML = `
+    <div class="result-banner ${bannerClass}">
+      ${bannerText}
+    </div>
+    <div class="score-display">
+      <div class="score-label">Tu puntuación ahora</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="ranking-title" style="font-size:20px;margin:8px 0">🏆 Ranking en vivo</div>
+    <div class="ranking-list">${filas}</div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="${esUltima ? 'finalizarGranFinal()' : 'siguienteFinalPregunta()'}">
+      ${esUltima ? 'Ver clasificación final 🏆' : 'Siguiente pregunta →'}
+    </button>`;
+}
+
+function siguienteFinalPregunta() {
+  preguntaIdx++;
+  renderPregunta();
+}
+
+async function finalizarGranFinal() {
+  misScores['final'] = puntuacionMinijuego;
+  await showFinal();
+}
+
+// Helper compartido: lo usan tanto las preguntas tipo trivia como las tipo
+// frase de la Gran Final para cerrar la pregunta (restar si falla, guardar
+// progreso y mostrar el ranking en vivo con el botón de continuar).
+// resultado puede ser: true (correcta, 0 pts) | 'parcial' (acertó solo una
+// de las dos partes, -625) | false (falló las dos, -1250)
+async function concluirPreguntaFinal(resultado) {
+  let penalizacion = 0;
+  if (resultado === 'parcial') penalizacion = Math.round(FINAL_PENALTY / 2);
+  else if (resultado === false) penalizacion = FINAL_PENALTY;
+
+  if (penalizacion > 0) {
+    puntuacionMinijuego = Math.max(0, puntuacionMinijuego - penalizacion);
+  }
+  try {
+    await upsertFinalScore(jugadorActual, puntuacionMinijuego);
+  } catch (err) {
+    console.error('Error guardando progreso de la Gran Final:', err);
+    showToast('⚠️ No se pudo guardar tu progreso, sigue jugando');
+  }
+  await mostrarRankingTrasPreguntaFinal(resultado);
+}
+
+// ── Preguntas tipo "Completa la frase" dentro de la Gran Final ──
+// Reutiliza el mismo Wordle (buildWordleGrid/buildKeyboard/presionarTecla)
+// que el minijuego de Frases normal, marcando wordleState.modoFinal = true
+// para que al resolverla entre por el flujo especial de la Gran Final.
+function renderFinalFrase(body, p, pct) {
+  const palabra = p.respuesta.replace(/\s/g, '');
+  const maxIntentos = 6;
+  wordleState = {
+    palabra,
+    respuestaOriginal: p.respuesta,
+    intentoActual: 0,
+    completado: false,
+    modoFinal: true,
+  };
+  currentInput = '';
+
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Tu puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="frase-display pop">
+      <div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">${p.quien} dijo...</div>
+      <div style="font-size:17px;font-weight:600;color:var(--text);line-height:1.6">"${formatFrase(p.frase, 0, p.respuesta)}"</div>
+      <div style="font-size:12px;color:var(--error);margin-top:10px">-${FINAL_PENALTY} pts si fallas</div>
+    </div>
+    <div class="wordle-grid" id="wordle-grid">${buildWordleGrid(palabra.length, maxIntentos)}</div>
+    <div class="keyboard" id="wordle-keyboard">${buildKeyboard()}</div>
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn btn-skip" style="width:auto;padding:10px 20px;max-width:200px" onclick="skipFrase()">Skip</button>
+    </div>`;
+}
+
+// ── Preguntas tipo "Adivina el evento" dentro de la Gran Final ──
+// Muestra una foto/documento y hay que acertar DOS cosas a la vez
+// (quién es + en qué curso/momento fue). Falla si falla cualquiera de las dos.
+function renderFinalEvento(body, p, pct) {
+  const opsPersona = NOMBRES_GRUPO.map(n => `<option value="${n}">${n}</option>`).join('');
+  const opsCurso = CURSOS_OPCIONES.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Tu puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="foto-container pop">
+      <img src="eventos/${p.archivo}" style="width:100%;height:100%;object-fit:cover" />
+    </div>
+    <div style="text-align:center;margin:12px 0;font-size:14px;font-weight:600">${p.pregunta}</div>
+    <div class="selector-wrap flex-col" style="gap:10px">
+      <select id="evento-persona">
+        <option value="">¿Quién es?</option>
+        ${opsPersona}
+      </select>
+      <select id="evento-curso">
+        <option value="">¿En qué curso?</option>
+        ${opsCurso}
+      </select>
+      <button class="btn btn-primary" onclick="responderEvento('${p.personaCorrecta}', '${p.cursoCorrecta}')">Confirmar</button>
+    </div>
+    <div style="font-size:12px;color:var(--error);text-align:center;margin-top:10px">-${FINAL_PENALTY} pts si fallas alguna de las dos</div>`;
+}
+
+async function responderEvento(personaCorrecta, cursoCorrecta) {
+  const selPersona = document.getElementById('evento-persona');
+  const selCurso = document.getElementById('evento-curso');
+
+  if (!selPersona.value || !selCurso.value) {
+    showToast('Responde las dos preguntas');
+    return;
+  }
+
+  const personaOk = selPersona.value === personaCorrecta;
+  const cursoOk = selCurso.value === cursoCorrecta;
+  const resultado = (personaOk && cursoOk) ? true : (personaOk || cursoOk) ? 'parcial' : false;
+
+  document.querySelector('.selector-wrap button').disabled = true;
+  selPersona.disabled = true;
+  selCurso.disabled = true;
+
+  if (resultado === true) {
+    showToast('✅ ¡Correcto!');
+  } else if (resultado === 'parcial') {
+    showToast(`⚠️ Solo aciertas una de las dos · Era ${personaCorrecta} · ${cursoCorrecta}`);
+  } else {
+    showToast(`❌ Era ${personaCorrecta} · ${cursoCorrecta}`);
+  }
+
+  setTimeout(() => concluirPreguntaFinal(resultado), 1400);
+}
+
+// ── Variante de "evento": persona (selector) + texto libre que debe
+// contener una palabra clave (no hace falta escribirlo exacto) ──
+function renderFinalEventoTexto(body, p, pct) {
+  const opsPersona = NOMBRES_GRUPO.map(n => `<option value="${n}">${n}</option>`).join('');
+
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Tu puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="foto-container pop">
+      <img src="${p.carpeta || 'eventos'}/${p.archivo}" style="width:100%;height:100%;object-fit:cover" />
+    </div>
+    <div style="text-align:center;margin:12px 0;font-size:14px;font-weight:600">${p.pregunta}</div>
+    <div class="selector-wrap flex-col" style="gap:10px">
+      <select id="evento-persona">
+        <option value="">¿Quién es?</option>
+        ${opsPersona}
+      </select>
+      <input type="text" id="evento-texto" placeholder="Escribe tu respuesta..." autocomplete="off" />
+      <button class="btn btn-primary" id="evento-texto-btn">Confirmar</button>
+    </div>
+    <div style="font-size:12px;color:var(--error);text-align:center;margin-top:10px">-${FINAL_PENALTY} pts si fallas alguna de las dos</div>`;
+
+  document.getElementById('evento-texto-btn').onclick = () => responderEventoTexto(p);
+  document.getElementById('evento-texto').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') responderEventoTexto(p);
+  });
+}
+
+async function responderEventoTexto(p) {
+  const selPersona = document.getElementById('evento-persona');
+  const input = document.getElementById('evento-texto');
+
+  if (!selPersona.value || !input.value.trim()) {
+    showToast('Responde las dos preguntas');
+    return;
+  }
+
+  const personaOk = selPersona.value === p.personaCorrecta;
+  const textoOk = input.value.toUpperCase().includes(p.palabraClave.toUpperCase());
+  const resultado = (personaOk && textoOk) ? true : (personaOk || textoOk) ? 'parcial' : false;
+
+  document.getElementById('evento-texto-btn').disabled = true;
+  selPersona.disabled = true;
+  input.disabled = true;
+
+  if (resultado === true) {
+    showToast('✅ ¡Correcto!');
+  } else if (resultado === 'parcial') {
+    showToast(`⚠️ Solo aciertas una de las dos · Era ${p.personaCorrecta} · debía contener "${p.palabraClave}"`);
+  } else {
+    showToast(`❌ Era ${p.personaCorrecta} · debía contener "${p.palabraClave}"`);
+  }
+
+  setTimeout(() => concluirPreguntaFinal(resultado), 1400);
+}
+
+// ── Preguntas tipo "¿Qué pasó después?" dentro de la Gran Final ──
+// Mismo corte automático + reveal que el minijuego de vídeo normal,
+// pero con opción múltiple y la mecánica de penalización de la Gran Final.
+function renderFinalVideo(body, p, pct) {
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Tu puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="video-player pop">
+      <div class="video-wrap">
+        <video id="video-el" src="${p.carpeta || 'videos_final'}/${p.archivo1}" playsinline webkit-playsinline></video>
+        <button class="play-btn video-play-btn" id="video-play-btn" onclick="playVideoFinalSetup()">▶</button>
+      </div>
+      <div class="audio-hint" id="video-hint">Toca para ver el vídeo · solo se puede ver 1 vez</div>
+    </div>
+    <div style="text-align:center;margin:12px 0;font-size:14px;font-weight:600">${p.pregunta}</div>
+    <div class="options-grid">
+      ${p.ops.map((op, i) => `
+        <button class="option-btn" onclick="responderFinalVideo(${i}, ${p.r}, '${p.archivo2}', '${p.carpeta || 'videos_final'}')">
+          <span class="option-letter">${'ABCD'[i]}</span>${op}
+        </button>`).join('')}
+    </div>
+    <div style="font-size:12px;color:var(--error);text-align:center;margin-top:10px">-${FINAL_PENALTY} pts si fallas</div>`;
+
+  body.dataset.vistoSetup = '0';
+
+  const video = document.getElementById('video-el');
+  video.onended = () => {
+    // Se acabó el único visionado permitido: el botón no vuelve a aparecer
+    body.dataset.vistoSetup = '1';
+    const hint = document.getElementById('video-hint');
+    if (hint) hint.textContent = 'Ya has visto el vídeo';
+  };
+}
+
+function playVideoFinalSetup() {
+  const body = document.getElementById('mj-body');
+  if (body.dataset.vistoSetup === '1') { showToast('Ya has gastado tu única reproducción'); return; }
+
+  const video = document.getElementById('video-el');
+  const btn = document.getElementById('video-play-btn');
+  if (!video) return;
+  video.currentTime = 0;
+  video.play().catch(() => showToast('Error al reproducir'));
+  videoActual = video;
+  btn.classList.add('hidden');
+}
+
+async function responderFinalVideo(idx, correcta, archivo2, carpeta) {
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const esCorrecta = idx === correcta;
+  btns[idx].classList.add(esCorrecta ? 'correct' : 'wrong');
+  if (!esCorrecta) btns[correcta].classList.add('correct');
+
+  // Cambia al vídeo de "lo que pasó después" y lo reproduce entero,
+  // dejando poder repetirlo las veces que quiera
+  const video = document.getElementById('video-el');
+  const playBtn = document.getElementById('video-play-btn');
+  const hint = document.getElementById('video-hint');
+  if (hint) hint.textContent = '👀 Esto es lo que pasó';
+
+  if (video) {
+    video.src = `${carpeta}/${archivo2}`;
+    video.load();
+    video.play().catch(() => {});
+    video.onended = () => { if (playBtn) playBtn.classList.remove('hidden'); };
+    if (playBtn) {
+      playBtn.classList.add('hidden');
+      playBtn.disabled = false;
+      playBtn.onclick = () => { video.currentTime = 0; video.play().catch(() => {}); playBtn.classList.add('hidden'); };
+    }
+  }
+
+  // Botón para continuar cuando el jugador quiera (el vídeo puede durar bastante)
+  const body = document.getElementById('mj-body');
+  const cont = document.createElement('div');
+  cont.style.cssText = 'margin-top:16px;text-align:center';
+  cont.innerHTML = `<button class="btn btn-primary" style="max-width:340px" onclick="concluirPreguntaFinal(${esCorrecta})">Continuar →</button>`;
+  body.appendChild(cont);
+}
+
+// ── Preguntas tipo "dos combos" dentro de la Gran Final ──
+// 1er combo: cantidad (selección única). 2º combo: selección MÚLTIPLE que
+// se desactiva si el 1er combo elige la opción "0" (índice 0).
+let finalComboSeleccionados = new Set();
+
+function renderFinalComboMulti(body, p, pct) {
+  finalComboSeleccionados = new Set();
+
+  const opsCantidad = p.cantidadOpciones.map((c, i) => `<option value="${i}">${c}</option>`).join('');
+  const trofeosHtml = p.opcionesMulti.map((t, i) => `
+    <button class="option-btn combo-multi-btn" id="combo-multi-${i}" onclick="toggleComboMulti(${i})">
+      <span class="option-letter">${'ABCD'[i]}</span>${t}
+    </button>`).join('');
+
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Tu puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="question-card pop">
+      <div class="question-text">${p.pregunta}</div>
+    </div>
+    <div class="selector-wrap flex-col" style="gap:10px;margin-bottom:14px">
+      <select id="combo-cantidad" onchange="onCambioComboCantidad()">
+        <option value="">${p.etiquetaCantidad || '¿Cuántos?'}</option>
+        ${opsCantidad}
+      </select>
+    </div>
+    <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px">${p.etiquetaMulti || 'Selecciona una o varias opciones'} (puedes elegir varias)</div>
+    <div class="options-grid" id="combo-multi-wrap">${trofeosHtml}</div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="responderComboMulti(${p.cantidadCorrectaIdx}, [${p.correctasMultiIdx.join(',')}])">Confirmar</button>
+    <div style="font-size:12px;color:var(--error);text-align:center;margin-top:10px">-${FINAL_PENALTY} pts si fallas</div>`;
+
+  // Al principio, sin cantidad elegida, el segundo combo está deshabilitado
+  document.querySelectorAll('.combo-multi-btn').forEach(b => b.disabled = true);
+  document.getElementById('combo-multi-wrap').style.opacity = '0.4';
+}
+
+function onCambioComboCantidad() {
+  const sel = document.getElementById('combo-cantidad');
+  const wrap = document.getElementById('combo-multi-wrap');
+  const esCero = sel.value === '0';
+  const sinElegir = sel.value === '';
+
+  finalComboSeleccionados = new Set();
+  document.querySelectorAll('.combo-multi-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.disabled = esCero || sinElegir;
+  });
+  wrap.style.opacity = (esCero || sinElegir) ? '0.4' : '1';
+}
+
+function toggleComboMulti(i) {
+  const btn = document.getElementById(`combo-multi-${i}`);
+  if (btn.disabled) return;
+  if (finalComboSeleccionados.has(i)) {
+    finalComboSeleccionados.delete(i);
+    btn.classList.remove('selected');
+  } else {
+    finalComboSeleccionados.add(i);
+    btn.classList.add('selected');
+  }
+}
+
+async function responderComboMulti(cantidadCorrectaIdx, correctasMultiIdx) {
+  const sel = document.getElementById('combo-cantidad');
+  if (sel.value === '') { showToast('Selecciona primero la cantidad'); return; }
+
+  const cantidadElegida = parseInt(sel.value);
+  const elegidos = [...finalComboSeleccionados].sort();
+  const correctos = [...correctasMultiIdx].sort();
+
+  const cantidadOk = cantidadElegida === cantidadCorrectaIdx;
+  // Si la cantidad correcta es "0", el combo de trofeos ni cuenta (estaba desactivado)
+  const multiOk = cantidadCorrectaIdx === 0
+    ? true
+    : (elegidos.length === correctos.length && elegidos.every((v, i) => v === correctos[i]));
+
+  const resultado = (cantidadOk && multiOk) ? true : (cantidadOk || multiOk) ? 'parcial' : false;
+
+  document.getElementById('combo-cantidad').disabled = true;
+  document.querySelectorAll('.combo-multi-btn').forEach(b => b.disabled = true);
+  document.querySelector('.btn.btn-primary[onclick^="responderComboMulti"]')?.setAttribute('disabled', 'true');
+
+  if (resultado === true) showToast('✅ ¡Correcto!');
+  else if (resultado === 'parcial') showToast('⚠️ Solo aciertas una de las dos');
+  else showToast('❌ No era correcto');
+
+  setTimeout(() => concluirPreguntaFinal(resultado), 1400);
+}
+
+// ── Preguntas tipo "opción múltiple con imágenes" dentro de la Gran Final ──
+// En vez de 4 textos, se eligen entre 4 fotos (ej. "¿cuál fue tal cosa?")
+function renderFinalImagenes(body, p, pct) {
+  body.innerHTML = `
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    <div class="score-display">
+      <div class="score-label">Tu puntuación</div>
+      <div class="score-value">${puntuacionMinijuego}</div>
+    </div>
+    <div class="question-card pop">
+      <div class="question-text">${p.pregunta}</div>
+      <div class="question-points" style="color:var(--error)">-${FINAL_PENALTY} pts si fallas</div>
+    </div>
+    <div class="img-options-grid">
+      ${p.archivos.map((archivo, i) => `
+        <button class="img-option-btn" id="img-opt-${i}" onclick="responderImagen(${i}, ${p.r})">
+          <img src="${p.carpeta || 'historias'}/${archivo}" />
+        </button>`).join('')}
+    </div>`;
+}
+
+async function responderImagen(idx, correcta) {
+  const btns = document.querySelectorAll('.img-option-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const esCorrecta = idx === correcta;
+  btns[idx].classList.add(esCorrecta ? 'correct' : 'wrong');
+  if (!esCorrecta) btns[correcta].classList.add('correct');
+
+  setTimeout(() => concluirPreguntaFinal(esCorrecta), 1400);
 }
 
 // ══════════════════════════════════════════════
