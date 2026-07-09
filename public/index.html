@@ -957,9 +957,6 @@
         <option>Roberto</option>
         <option>Sofia</option>
         <option>Wili</option>
-        <option>Prueba 1</option>
-        <option>Prueba 2</option>
-        <option>Prueba 3</option>
       </select>
     </div>
     <button class="btn btn-primary" onclick="entrar()">Entrar al juego 🎮</button>
@@ -1094,7 +1091,7 @@ const UNLOCK_DATES = {
   fotos:     new Date('2026-07-05T00:00:00+02:00'),
   frases:    new Date('2026-07-10T00:00:00+02:00'),
   trivia:    new Date('2026-07-14T00:00:00+02:00'),
-  final:     new Date('2026-07-18T00:00:00+02:00'),
+  final:     new Date('2026-07-18T22:30:00+02:00'),
 };
 
 const MINIJUEGOS_CONFIG = [
@@ -1122,7 +1119,7 @@ const FINAL_QUESTIONS = [
   { formato: 'frase', quien: 'Dani', frase: 'Ponle ___ de Lucía que se tira al collado', respuesta: 'BOZAL A LA PERRA' },
   { formato: 'evento', archivo: 'Pablo_2Bachillerato.jpeg', pregunta: '¿De quién son estas notas y en qué curso fue?', personaCorrecta: 'Pablo', cursoCorrecta: '2º Bachillerato' },
   { formato: 'imagenes', pregunta: '¿Cuál de estas 4 fotos fue mi primera historia en Instagram?', archivos: ['PH_Cerveza.jpeg', 'PH_Hamburguesa.jpeg', 'PH_Litro.jpeg', 'PH_Squad.jpeg'], r: 0 },
-  { q: 'Bueno _______ se ofrece en la calle para que la taladren por detrás', ops: ['Paqui', 'Ali', 'Nuria', 'AnaSanvel'], r: 3 },
+  { titulo: 'Completa la frase', q: 'Bueno _______ se ofrece en la calle para que la taladren por detrás', ops: ['Paqui', 'Ali', 'Nuria', 'AnaSanvel'], r: 3 },
   { formato: 'imagenes', carpeta: 'fullsimios', pregunta: '¿Cuál fue la primera foto que se pasó al grupo de FULL SIMIOS?', archivos: ['PF_Botellines.jpeg', 'PF_Fran.jpeg', 'PF_Fuente.jpeg', 'PF_Kangaranga.jpeg'], r: 2 },
   { formato: 'evento_texto', archivo: 'Fran_Nigerianos.jpeg', pregunta: '¿Quién hizo esta captura de pantalla y a quién le estaba hablando?', personaCorrecta: 'Fran', palabraClave: 'NIGERIANO' },
   { q: '¿Quién ganó el premio al más Proxeneta del grupo en 2024?', ops: ['Roberto', 'Fran', 'Andrés', 'Dani'], r: 2 },
@@ -1266,7 +1263,7 @@ let jugadorActual = '';
 const ADMIN = "Pablo";
 // Perfiles de PRUEBA: juegos desbloqueados aunque no sea la fecha + repetición libre.
 // ⚠️ Antes de la fiesta, vacía esta lista para que nadie tenga ventaja
-const TESTERS = ['Prueba 1', 'Prueba 2', 'Prueba 3'];
+const TESTERS = [];
 function esPrueba(nombre) { return nombre === ADMIN || TESTERS.includes(nombre); }
 let misScores = {};
 let rankingData = [];
@@ -2420,6 +2417,7 @@ function renderFinalTrivia(body, p, pct) {
       <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
     <div class="question-card pop">
+      ${p.titulo ? `<div style="font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">${p.titulo}</div>` : ''}
       <div class="question-text">${p.q}</div>
       <div class="question-points" style="color:var(--error)">-${FINAL_PENALTY} pts si fallas</div>
     </div>
