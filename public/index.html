@@ -3092,12 +3092,9 @@ function cerrarPopupGanador() {
 async function mostrarPuntuacionesReales() {
   await actualizarRanking();
 
-  const ordenados = [...rankingData].sort((a, b) => {
-    if (a.total !== b.total) return a.total - b.total; // ascendente: el peor primero
-    const ra = a.rondaCero ?? Infinity;
-    const rb = b.rondaCero ?? Infinity;
-    return ra - rb;
-  });
+  // rankingData ya viene ordenado de mejor a peor (con el desempate por
+  // ronda_cero incluido), igual que el resto del ranking de la app
+  const ordenados = rankingData;
 
   const list = document.getElementById('reales-list');
   list.innerHTML = ordenados.map((p, i) => {
