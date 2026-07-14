@@ -1095,6 +1095,8 @@
       <div class="loading"><div class="spinner"></div> Cargando...</div>
     </div>
     <button class="btn btn-secondary" id="btn-ver-reales" style="display:none;margin-top:10px;font-size:12px;padding:10px" onclick="mostrarPuntuacionesReales()">🔍 Ver puntuaciones reales (admin)</button>
+    <button class="btn btn-secondary" id="btn-test-escritor" style="display:none;margin-top:8px;font-size:12px;padding:10px" onclick="probarCastigoComoEscritor()">🧪 Probar castigo (escritor)</button>
+    <button class="btn btn-secondary" id="btn-test-castigado" style="display:none;margin-top:8px;font-size:12px;padding:10px" onclick="probarCastigoComoCastigado()">🧪 Probar castigo (castigado)</button>
   </div>
 </div>
 
@@ -1801,6 +1803,8 @@ async function completarEntrada(nombre) {
         });
         actualizarMinijuegosGrid();
         document.getElementById('btn-ver-reales').style.display = 'block';
+        document.getElementById('btn-test-escritor').style.display = 'block';
+        document.getElementById('btn-test-castigado').style.display = 'block';
     }
 
     initRealtime();
@@ -3283,9 +3287,23 @@ function cerrarCastigoModal() {
   document.getElementById('castigo-modal-overlay').classList.remove('show');
 }
 
-async function renderCastigoModalContent() {
+// ── Solo admin: probar el modal saltándose las condiciones reales ──
+// (siguen usando la base de datos real de papelitos, solo se fuerza
+// el "revelado" y el "quién es el castigado" para poder probar sin
+// tener que esperar a que todo el mundo termine La Gran Final)
+async function probarCastigoComoEscritor() {
+  document.getElementById('castigo-modal-overlay').classList.add('show');
+  await renderCastigoModalContent(true, false);
+}
+
+async function probarCastigoComoCastigado() {
+  document.getElementById('castigo-modal-overlay').classList.add('show');
+  await renderCastigoModalContent(true, true);
+}
+
+async function renderCastigoModalContent(forzarRevelado = null, forzarCastigado = null) {
   const cont = document.getElementById('castigo-modal-content');
-  const revelado = todosHanTerminado();
+  const revelado = forzarRevelado !== null ? forzarRevelado : todosHanTerminado();
 
   if (!revelado) {
     const terminados = rankingData.filter(p => p.scores.final !== undefined).length;
@@ -3325,7 +3343,8 @@ async function renderCastigoModalContent() {
   }
 
   // Eres el castigado: puedes sacar 3 papelitos (si hay suficientes ya escritos)
-  if (esElCastigado()) {
+  const soyElCastigado = forzarCastigado !== null ? forzarCastigado : esElCastigado();
+  if (soyElCastigado) {
     if (papeles.length < 3) {
       cont.innerHTML = `
         <div class="castigo-modal-emoji">🔥😰</div>
