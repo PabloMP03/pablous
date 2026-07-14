@@ -831,6 +831,90 @@
       margin-bottom: 20px;
     }
 
+    /* ── PAPELITOS DEL CASTIGO ── */
+    .papelitos-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin: 16px 0 4px;
+    }
+    .papelito-num {
+      aspect-ratio: 1;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .papelito-num:hover:not(:disabled) { border-color: var(--accent2); background: rgba(124,58,237,0.12); }
+    .papelito-num.elegido { border-color: var(--accent); background: rgba(255,61,107,0.2); }
+    .papelito-num.ocupado { opacity: 0.3; cursor: not-allowed; text-decoration: line-through; }
+    .papelito-textarea {
+      width: 100%;
+      min-height: 70px;
+      padding: 12px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      resize: none;
+      outline: none;
+    }
+    .papelito-textarea:focus { border-color: var(--accent); }
+
+    /* Animación de barajar */
+    .papelitos-shuffle {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin: 30px 0;
+      height: 80px;
+      align-items: center;
+    }
+    .papel-card {
+      width: 50px;
+      height: 70px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 4px 16px rgba(255,61,107,0.4);
+    }
+    .shuffle-anim { animation: barajarCarta 0.5s ease-in-out infinite; }
+    @keyframes barajarCarta {
+      0%, 100% { transform: translateY(0) rotate(-6deg); }
+      50% { transform: translateY(-14px) rotate(6deg); }
+    }
+
+    /* Las 3 opciones a elegir */
+    .papelitos-3 {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .papel-opcion {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s;
+      opacity: 0;
+      animation: pop 0.4s ease forwards;
+    }
+    .papel-opcion:hover { border-color: var(--accent); background: rgba(255,61,107,0.08); transform: scale(1.02); }
+    .papel-opcion-num { font-size: 11px; color: var(--accent); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+    .papel-opcion-texto { font-size: 14px; color: var(--text); font-weight: 600; }
+
     .toast {
       position: fixed;
       bottom: 24px;
@@ -1067,11 +1151,8 @@
 
 <!-- EASTER EGG DEL CASTIGO -->
 <div class="castigo-modal-overlay" id="castigo-modal-overlay" onclick="cerrarCastigoModal()">
-  <div class="castigo-modal-card pop" onclick="event.stopPropagation()">
-    <div class="castigo-modal-emoji" id="castigo-modal-emoji">🔥🤫</div>
-    <div class="castigo-modal-title" id="castigo-modal-title">Pista...</div>
-    <div class="castigo-modal-text" id="castigo-modal-text"></div>
-    <button class="btn btn-primary" id="castigo-modal-btn" onclick="cerrarCastigoModal()">Uy... 🔥</button>
+  <div class="castigo-modal-card pop" onclick="event.stopPropagation()" style="max-width:360px">
+    <div id="castigo-modal-content"><!-- generado por JS --></div>
   </div>
 </div>
 
@@ -3157,36 +3238,226 @@ function cerrarImagenCompleta() {
   document.getElementById('lightbox-overlay').classList.remove('show');
 }
 
-function mostrarCastigoEasterEgg() {
-  const revelado = todosHanTerminado();
+// ══════════════════════════════════════════════
+// CASTIGO: sistema de papelitos
+// ══════════════════════════════════════════════
+async function getCastigoPapeles() {
+  return await sbFetch('castigo_papeles?select=*&order=numero.asc') || [];
+}
 
-  const emoji = document.getElementById('castigo-modal-emoji');
-  const title = document.getElementById('castigo-modal-title');
-  const text = document.getElementById('castigo-modal-text');
-  const btn = document.getElementById('castigo-modal-btn');
+async function submitCastigoPapel(numero, reto) {
+  return await sbFetch('castigo_papeles', {
+    method: 'POST',
+    body: JSON.stringify({ numero, player_name: jugadorActual, reto })
+  });
+}
 
-  if (revelado) {
-    emoji.textContent = '🔥📝';
-    title.textContent = '¡Así es el castigo!';
-    text.innerHTML = `
-      Cada uno escribe un <b>reto</b> en un papelito y lo mete en el bote.<br><br>
-      El último clasificado sacará <b>3 papeles al azar</b> de entre todos los retos... y elegirá cuál de los 3 tiene que cumplir. 😈`;
-    btn.textContent = 'Entendido 🔥';
-  } else {
-    emoji.textContent = '🔥🤫';
-    title.textContent = 'Pista...';
-    text.innerHTML = `
-      Todos vais a aportar vuestro granito de fuego, en secreto.<br><br>
-      El día de la fiesta, el destino le pondrá al perdedor <b>varias opciones</b> sobre la mesa... y tendrá que elegir una. 😈<br><br>
-      <span style="opacity:0.6;font-size:12px">(No se libra nadie de participar)</span>`;
-    btn.textContent = 'Uy... 🔥';
-  }
+async function getCastigoResultado() {
+  const res = await sbFetch('castigo_resultado?id=eq.1&select=*');
+  return res && res.length ? res[0] : null;
+}
 
+async function setCastigoResultado(numero, texto) {
+  return await sbFetch('castigo_resultado?on_conflict=id', {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({ id: 1, numero_elegido: numero, texto, elegido_en: new Date().toISOString() })
+  });
+}
+
+// El castigado es quien queda último en el ranking real, una vez todos
+// han terminado La Gran Final (misma base que el popup del ganador)
+function esElCastigado() {
+  if (!todosHanTerminado() || !rankingData.length) return false;
+  return rankingData[rankingData.length - 1].nombre === jugadorActual;
+}
+
+let numeroPapelitoElegido = null;
+
+async function mostrarCastigoEasterEgg() {
   document.getElementById('castigo-modal-overlay').classList.add('show');
+  await renderCastigoModalContent();
 }
 
 function cerrarCastigoModal() {
   document.getElementById('castigo-modal-overlay').classList.remove('show');
+}
+
+async function renderCastigoModalContent() {
+  const cont = document.getElementById('castigo-modal-content');
+  const revelado = todosHanTerminado();
+
+  if (!revelado) {
+    const terminados = rankingData.filter(p => p.scores.final !== undefined).length;
+    cont.innerHTML = `
+      <div class="castigo-modal-emoji">🔥🤫</div>
+      <div class="castigo-modal-title">Pista...</div>
+      <div class="castigo-modal-text">
+        Todos vais a aportar vuestro granito de fuego, en secreto.<br><br>
+        El día de la fiesta, el destino le pondrá al perdedor <b>varias opciones</b> sobre la mesa... y tendrá que elegir una. 😈<br><br>
+        <span style="opacity:0.6;font-size:12px">(${terminados}/${rankingData.length} han terminado La Gran Final)</span>
+      </div>
+      <button class="btn btn-primary" onclick="cerrarCastigoModal()">Uy... 🔥</button>`;
+    return;
+  }
+
+  let papeles, resultado;
+  try {
+    [papeles, resultado] = await Promise.all([getCastigoPapeles(), getCastigoResultado()]);
+  } catch (err) {
+    console.error('Error cargando castigo:', err);
+    cont.innerHTML = `
+      <div class="castigo-modal-emoji">⚠️</div>
+      <div class="castigo-modal-text">No se pudo cargar, inténtalo de nuevo</div>
+      <button class="btn btn-primary" onclick="cerrarCastigoModal()">Cerrar</button>`;
+    return;
+  }
+
+  // Ya hay un castigo final decidido: se lo enseñamos a todo el mundo
+  if (resultado && resultado.texto) {
+    cont.innerHTML = `
+      <div class="castigo-modal-emoji">🔥🏆</div>
+      <div class="castigo-modal-title">¡Castigo decidido!</div>
+      <div class="castigo-modal-text" id="castigo-resultado-texto" style="font-size:16px;font-weight:700;color:var(--text)"></div>
+      <button class="btn btn-primary" onclick="cerrarCastigoModal()">😈 A cumplirlo</button>`;
+    document.getElementById('castigo-resultado-texto').textContent = resultado.texto;
+    return;
+  }
+
+  // Eres el castigado: puedes sacar 3 papelitos (si hay suficientes ya escritos)
+  if (esElCastigado()) {
+    if (papeles.length < 3) {
+      cont.innerHTML = `
+        <div class="castigo-modal-emoji">🔥😰</div>
+        <div class="castigo-modal-title">Eres el castigado...</div>
+        <div class="castigo-modal-text">Hacen falta al menos 3 papelitos escritos para que puedas sacar. De momento hay ${papeles.length}.</div>
+        <button class="btn btn-primary" onclick="cerrarCastigoModal()">Vale</button>`;
+    } else {
+      cont.innerHTML = `
+        <div class="castigo-modal-emoji">😈</div>
+        <div class="castigo-modal-title">Eres el castigado</div>
+        <div class="castigo-modal-text">Vas a sacar 3 papelitos al azar de entre los ${papeles.length} escritos... y elegirás uno.</div>
+        <button class="btn btn-primary" onclick="sacarTresPapeles()">🎲 Sacar 3 papelitos</button>`;
+    }
+    return;
+  }
+
+  // No eres el castigado: puedes escribir tu papelito si aún no lo hiciste
+  const miPapel = papeles.find(p => p.player_name === jugadorActual);
+  if (miPapel) {
+    cont.innerHTML = `
+      <div class="castigo-modal-emoji">✅</div>
+      <div class="castigo-modal-title">¡Ya has escrito tu papelito!</div>
+      <div class="castigo-modal-text">Papel nº ${miPapel.numero}:<br><span id="mi-papel-texto" style="color:var(--text);font-weight:600"></span></div>
+      <button class="btn btn-primary" onclick="cerrarCastigoModal()">Vale</button>`;
+    document.getElementById('mi-papel-texto').textContent = `"${miPapel.reto}"`;
+    return;
+  }
+
+  const ocupados = new Set(papeles.map(p => p.numero));
+  const numerosHtml = Array.from({ length: 17 }, (_, i) => i + 1).map(n => {
+    const ocupado = ocupados.has(n);
+    return `<button class="papelito-num ${ocupado ? 'ocupado' : ''}" ${ocupado ? 'disabled' : ''} onclick="elegirNumeroPapelito(${n}, this)">${n}</button>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div class="castigo-modal-emoji">📝🔥</div>
+    <div class="castigo-modal-title">Elige tu papelito</div>
+    <div class="castigo-modal-text" style="font-size:12px">Elige un número libre y escribe el reto que le tocará cumplir al castigado si sale tu papel.</div>
+    <div class="papelitos-grid">${numerosHtml}</div>
+    <div id="papelito-form" style="display:none;margin-top:14px">
+      <textarea id="papelito-reto" class="papelito-textarea" placeholder="Escribe el reto..." maxlength="200"></textarea>
+      <button class="btn btn-primary" style="margin-top:10px" onclick="confirmarPapelito()">Guardar reto</button>
+    </div>
+    <button class="btn btn-secondary" style="margin-top:14px" onclick="cerrarCastigoModal()">Cerrar</button>`;
+}
+
+function elegirNumeroPapelito(n, btn) {
+  numeroPapelitoElegido = n;
+  document.querySelectorAll('.papelito-num').forEach(b => b.classList.remove('elegido'));
+  btn.classList.add('elegido');
+  document.getElementById('papelito-form').style.display = 'block';
+  document.getElementById('papelito-reto').focus();
+}
+
+async function confirmarPapelito() {
+  const input = document.getElementById('papelito-reto');
+  const texto = input.value.trim();
+  if (!numeroPapelitoElegido) { showToast('Elige un número primero'); return; }
+  if (!texto) { showToast('Escribe el reto'); return; }
+
+  try {
+    await submitCastigoPapel(numeroPapelitoElegido, texto);
+  } catch (err) {
+    console.error('Error guardando papelito:', err);
+    showToast('⚠️ Ese número ya lo cogieron, elige otro');
+    numeroPapelitoElegido = null;
+    await renderCastigoModalContent();
+    return;
+  }
+
+  showToast('✅ Reto guardado');
+  numeroPapelitoElegido = null;
+  await renderCastigoModalContent();
+}
+
+// Animación: baraja 3 cartas antes de revelar los 3 papelitos elegidos al azar
+async function sacarTresPapeles() {
+  const papeles = await getCastigoPapeles();
+  if (papeles.length < 3) { showToast('Aún no hay suficientes papelitos'); return; }
+
+  const barajados = [...papeles].sort(() => Math.random() - 0.5);
+  const elegidos = barajados.slice(0, 3);
+
+  const cont = document.getElementById('castigo-modal-content');
+  cont.innerHTML = `
+    <div class="castigo-modal-title">Barajando...</div>
+    <div class="papelitos-shuffle">
+      <div class="papel-card shuffle-anim" style="animation-delay:0s">🔥</div>
+      <div class="papel-card shuffle-anim" style="animation-delay:0.15s">🔥</div>
+      <div class="papel-card shuffle-anim" style="animation-delay:0.3s">🔥</div>
+    </div>`;
+
+  setTimeout(() => mostrarTresOpciones(elegidos), 1900);
+}
+
+function mostrarTresOpciones(elegidos) {
+  const cont = document.getElementById('castigo-modal-content');
+  cont.innerHTML = `
+    <div class="castigo-modal-emoji">😈</div>
+    <div class="castigo-modal-title">Elige tu destino</div>
+    <div class="castigo-modal-text" style="font-size:12px">Toca uno de los 3 papelitos para elegir tu castigo</div>
+    <div class="papelitos-3">
+      ${elegidos.map((p, i) => `
+        <button class="papel-opcion pop" id="papel-opcion-${i}" style="animation-delay:${i * 0.15}s">
+          <div class="papel-opcion-num">Papel ${i + 1}</div>
+          <div class="papel-opcion-texto" id="papel-opcion-texto-${i}"></div>
+        </button>`).join('')}
+    </div>`;
+
+  elegidos.forEach((p, i) => {
+    document.getElementById(`papel-opcion-texto-${i}`).textContent = p.reto;
+    document.getElementById(`papel-opcion-${i}`).addEventListener('click', () => elegirCastigoFinal(p.numero, p.reto));
+  });
+}
+
+async function elegirCastigoFinal(numero, texto) {
+  try {
+    await setCastigoResultado(numero, texto);
+  } catch (err) {
+    console.error('Error guardando el castigo final:', err);
+    showToast('⚠️ Error guardando, inténtalo de nuevo');
+    return;
+  }
+
+  const cont = document.getElementById('castigo-modal-content');
+  cont.innerHTML = `
+    <div class="castigo-modal-emoji">🔥🏆</div>
+    <div class="castigo-modal-title">¡Castigo decidido!</div>
+    <div class="castigo-modal-text" id="castigo-final-texto" style="font-size:16px;font-weight:700;color:var(--text)"></div>
+    <button class="btn btn-primary" onclick="cerrarCastigoModal()">😈 A cumplirlo</button>`;
+  document.getElementById('castigo-final-texto').textContent = texto;
+  lanzarConfetti();
 }
 
 function showToast(msg) {
