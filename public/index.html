@@ -3342,21 +3342,27 @@ async function renderCastigoModalContent(forzarRevelado = null, forzarCastigado 
     return;
   }
 
-  // Eres el castigado: puedes sacar 3 papelitos (si hay suficientes ya escritos)
+  // Eres el castigado: eliges TÚ 3 números (a ciegas, sin saber qué ponen)
   const soyElCastigado = forzarCastigado !== null ? forzarCastigado : esElCastigado();
   if (soyElCastigado) {
     if (papeles.length < 3) {
       cont.innerHTML = `
         <div class="castigo-modal-emoji">🔥😰</div>
         <div class="castigo-modal-title">Eres el castigado...</div>
-        <div class="castigo-modal-text">Hacen falta al menos 3 papelitos escritos para que puedas sacar. De momento hay ${papeles.length}.</div>
+        <div class="castigo-modal-text">Hacen falta al menos 3 papelitos escritos para que puedas elegir. De momento hay ${papeles.length}.</div>
         <button class="btn btn-primary" onclick="cerrarCastigoModal()">Vale</button>`;
     } else {
+      castigadoSeleccion = new Set();
+      const numerosHtml = papeles.map(p => `
+        <button class="papelito-num" id="castigado-num-${p.numero}" onclick="toggleNumeroCastigado(${p.numero}, this)">${p.numero}</button>`).join('');
+
       cont.innerHTML = `
         <div class="castigo-modal-emoji">😈</div>
         <div class="castigo-modal-title">Eres el castigado</div>
-        <div class="castigo-modal-text">Vas a sacar 3 papelitos al azar de entre los ${papeles.length} escritos... y elegirás uno.</div>
-        <button class="btn btn-primary" onclick="sacarTresPapeles()">🎲 Sacar 3 papelitos</button>`;
+        <div class="castigo-modal-text" style="font-size:12px">Elige 3 números de los ${papeles.length} papelitos escritos, sin saber qué hay en cada uno.</div>
+        <div class="papelitos-grid">${numerosHtml}</div>
+        <div id="castigado-contador" style="text-align:center;font-size:12px;color:var(--muted);margin:10px 0">0/3 elegidos</div>
+        <button class="btn btn-primary" id="btn-confirmar-3" disabled onclick="confirmarTresElegidos()">Confirmar mis 3 números</button>`;
     }
     return;
   }
@@ -3421,16 +3427,31 @@ async function confirmarPapelito() {
 }
 
 // Animación: baraja 3 cartas antes de revelar los 3 papelitos elegidos al azar
-async function sacarTresPapeles() {
-  const papeles = await getCastigoPapeles();
-  if (papeles.length < 3) { showToast('Aún no hay suficientes papelitos'); return; }
+// El castigado elige a mano 3 de los números (sin saber qué ponen)
+let castigadoSeleccion = new Set();
 
-  const barajados = [...papeles].sort(() => Math.random() - 0.5);
-  const elegidos = barajados.slice(0, 3);
+function toggleNumeroCastigado(n, btn) {
+  if (castigadoSeleccion.has(n)) {
+    castigadoSeleccion.delete(n);
+    btn.classList.remove('elegido');
+  } else {
+    if (castigadoSeleccion.size >= 3) { showToast('Ya has elegido 3 números'); return; }
+    castigadoSeleccion.add(n);
+    btn.classList.add('elegido');
+  }
+  document.getElementById('castigado-contador').textContent = `${castigadoSeleccion.size}/3 elegidos`;
+  document.getElementById('btn-confirmar-3').disabled = castigadoSeleccion.size !== 3;
+}
+
+async function confirmarTresElegidos() {
+  if (castigadoSeleccion.size !== 3) { showToast('Elige exactamente 3 números'); return; }
+
+  const papeles = await getCastigoPapeles();
+  const elegidos = papeles.filter(p => castigadoSeleccion.has(p.numero));
 
   const cont = document.getElementById('castigo-modal-content');
   cont.innerHTML = `
-    <div class="castigo-modal-title">Barajando...</div>
+    <div class="castigo-modal-title">Revelando tus 3 papelitos...</div>
     <div class="papelitos-shuffle">
       <div class="papel-card shuffle-anim" style="animation-delay:0s">🔥</div>
       <div class="papel-card shuffle-anim" style="animation-delay:0.15s">🔥</div>
