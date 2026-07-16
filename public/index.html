@@ -358,11 +358,27 @@
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 12px;
     }
     .mj-back { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px; }
     .mj-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; flex: 1; }
     .mj-pregunta { font-size: 12px; color: var(--muted); }
+    .mj-gf-status {
+      width: 100%;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent3);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── SALA DE ESPERA (Gran Final) ── */
+    .gf-espera { text-align: center; padding: 40px 20px; }
+    .gf-espera-emoji { font-size: 48px; margin-bottom: 12px; }
+    .gf-espera-title { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 1px; }
+    .gf-espera-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+    .gf-espera-count { font-size: 32px; font-family: 'Bebas Neue', sans-serif; color: var(--accent3); margin-bottom: 20px; }
+    .gf-espera-nota { font-size: 11px; color: var(--muted); margin-top: 16px; line-height: 1.5; }
 
     .mj-body { flex: 1; width: 100%; padding: 24px 20px; overflow-y: auto; }
 
@@ -1041,6 +1057,10 @@
         <option>Roberto</option>
         <option>Sofia</option>
         <option>Wili</option>
+        <option>Prueba 1</option>
+        <option>Prueba 2</option>
+        <option>Prueba 3</option>
+        <option>Prueba Juanki</option>
       </select>
     </div>
     <button class="btn btn-primary" onclick="entrar()">Entrar al juego 🎮</button>
@@ -1116,6 +1136,7 @@
     <button class="mj-back" onclick="volverLobby()">←</button>
     <div class="mj-title" id="mj-titulo">—</div>
     <div class="mj-pregunta" id="mj-pregunta-num">1/4</div>
+    <div class="mj-gf-status" id="mj-gf-status" style="display:none"></div>
   </div>
   <div class="mj-body" id="mj-body">
     <!-- contenido dinámico -->
@@ -1197,6 +1218,9 @@ const CORE_IDS = ['canciones', 'video', 'fotos', 'frases', 'trivia'];
 const FINAL_PENALTY = 1250;
 // Opciones de curso para preguntas tipo "evento"
 const CURSOS_OPCIONES = ['1º ESO', '2º ESO', '3º ESO', '4º ESO', '1º Bachillerato', '2º Bachillerato'];
+
+// Tiempo (en segundos) para cada una de las 10 rondas de La Gran Final
+const GF_ROUND_TIMES = [300, 180, 120, 90, 120, 180, 90, 300, 120, 150];
 
 const FINAL_QUESTIONS = [
   { formato: 'frase', quien: 'Dani', frase: 'Ponle ___ de Lucía que se tira al collado', respuesta: 'BOZAL A LA PERRA' },
@@ -1346,7 +1370,7 @@ let jugadorActual = '';
 const ADMIN = "Pablo";
 // Perfiles de PRUEBA: juegos desbloqueados aunque no sea la fecha + repetición libre.
 // ⚠️ Antes de la fiesta, vacía esta lista para que nadie tenga ventaja
-const TESTERS = [];
+const TESTERS = ['Prueba 1', 'Prueba 2', 'Prueba 3', 'Prueba Juanki'];
 function esPrueba(nombre) { return nombre === ADMIN || TESTERS.includes(nombre); }
 let misScores = {};
 let rankingData = [];
@@ -1354,6 +1378,7 @@ let realtimeChannel = null;
 let minijuegoActivo = null;
 let preguntasActuales = [];
 let preguntaIdx = 0;
+let gfRondaActual = 1; // ronda actual (1-10) dentro de La Gran Final
 let puntuacionMinijuego = 0;
 let audioActual = null;
 let videoActual = null;
@@ -1615,21 +1640,12 @@ function actualizarMinijuegosGrid() {
 // jugado algo hayan terminado La Gran Final (misma condición que el popup
 // del ganador). Hasta entonces solo se ve la pista enigmática.
 function buildCastigoCard() {
-  const revelado = todosHanTerminado();
-  const terminados = rankingData.filter(p => p.scores.final !== undefined).length;
-  const totalJugadores = rankingData.length;
-
-  const hintHtml = revelado
-    ? `<div class="castigo-tap-hint">👆 Toca para ver de qué va</div>`
-    : `<div class="castigo-tap-hint">🔒 Se revela cuando todos terminen La Gran Final</div>
-       <div class="castigo-progreso">${terminados}/${totalJugadores} han terminado</div>`;
-
   return `
     <div class="minijuego-card castigo-card" onclick="mostrarCastigoEasterEgg()">
       <div class="castigo-emoji">🔥</div>
       <div class="castigo-title">¡Habrá castigo!</div>
       <div class="castigo-sub">La votación lo decidió: 14 a favor · 2 en contra</div>
-      ${hintHtml}
+      <div class="castigo-tap-hint">👆 Toca para participar</div>
     </div>`;
 }
 
@@ -1827,6 +1843,10 @@ function cancelarPass() {
 function volverLobby() {
   if (audioActual) { audioActual.pause(); audioActual = null; }
   if (videoActual) { videoActual.pause(); videoActual = null; }
+  clearInterval(gfTimerInterval);
+  clearInterval(gfHeaderInterval);
+  clearInterval(gfEsperandoInterval);
+  clearInterval(gfRecapInterval);
   showScreen('lobby');
   actualizarRanking();
 }
@@ -1849,22 +1869,51 @@ function startMinijuego(id) {
   minijuegoActivo = id;
   preguntaIdx = 0;
 
+  const config = MINIJUEGOS_CONFIG.find(m => m.id === id);
+  document.getElementById('mj-titulo').textContent = `${config.emoji} ${config.nombre}`;
+  preguntasActuales = seleccionarPreguntas(id);
+  showScreen('minijuego');
+
   if (id === 'final') {
     // Punto de partida: la suma de sus 5 minijuegos ya jugados
     puntuacionMinijuego = CORE_IDS.reduce((sum, cid) => sum + (misScores[cid] || 0), 0);
     finalRondaCero = null;
-  } else {
-    puntuacionMinijuego = 0;
+
+    if (EXCLUDED_CASTIGO_PREMIO.includes(jugadorActual)) {
+      mostrarAvisoExcluido();
+    } else {
+      iniciarFlujoGranFinal();
+    }
+    return;
   }
 
-  const config = MINIJUEGOS_CONFIG.find(m => m.id === id);
-  document.getElementById('mj-titulo').textContent = `${config.emoji} ${config.nombre}`;
-
-  // Seleccionar preguntas
-  preguntasActuales = seleccionarPreguntas(id);
-
-  showScreen('minijuego');
+  puntuacionMinijuego = 0;
   renderPregunta();
+}
+
+function mostrarAvisoExcluido() {
+  const body = document.getElementById('mj-body');
+  body.innerHTML = `
+    <div class="completado-overlay pop">
+      <div class="completado-emoji">🙈</div>
+      <div class="completado-title" style="color:var(--muted)">Un aviso antes de empezar</div>
+      <div style="color:var(--text);font-size:15px;line-height:1.7;margin:16px 0">
+        Como no vienes al cumple, lamentablemente no puedes optar ni al <b>premio</b> ni al <b>castigo</b>.<br><br>
+        Pero puedes jugar igual y ver cómo te habría ido 🎮
+      </div>
+      <button class="btn btn-primary" onclick="iniciarFlujoGranFinal()">Vale, ¡a jugar!</button>
+    </div>`;
+}
+
+async function iniciarFlujoGranFinal() {
+  try { await gfRegistrarEntrada(); } catch (err) { console.error('Error registrando entrada a la Gran Final:', err); }
+
+  if (esPrueba(jugadorActual)) {
+    // Admin / testers: sin sala de espera, para poder probar solos
+    empezarRondaGranFinal(1);
+  } else {
+    await mostrarSalaDeEspera(1);
+  }
 }
 
 function seleccionarPreguntas(id) {
@@ -1913,7 +1962,9 @@ function seleccionarPreguntas(id) {
 
 function renderPregunta() {
   const total = preguntasActuales.length;
-  document.getElementById('mj-pregunta-num').textContent = `${preguntaIdx + 1}/${total}`;
+  document.getElementById('mj-pregunta-num').textContent = minijuegoActivo === 'final'
+    ? `Ronda ${preguntaIdx + 1}/${total}`
+    : `${preguntaIdx + 1}/${total}`;
 
   const pct = (preguntaIdx / total) * 100;
   const p = preguntasActuales[preguntaIdx];
@@ -2520,28 +2571,220 @@ async function responderFinal(idx, correcta) {
 
   const esCorrecta = idx === correcta;
   btns[idx].classList.add(esCorrecta ? 'correct' : 'wrong');
-  if (!esCorrecta) {
-    btns[correcta].classList.add('correct');
-    puntuacionMinijuego = Math.max(0, puntuacionMinijuego - FINAL_PENALTY);
-  }
+  if (!esCorrecta) btns[correcta].classList.add('correct');
 
-  // Se guarda tras CADA pregunta para que todos vean el ranking actualizarse en vivo
+  await concluirPreguntaFinal(esCorrecta);
+}
+
+// ══════════════════════════════════════════════
+// GRAN FINAL: sala de espera + rondas con tiempo
+// ══════════════════════════════════════════════
+async function gfRegistrarEntrada() {
+  return await sbFetch('gf_estado?on_conflict=player_name', {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({ player_name: jugadorActual, ronda: 1, listo: false, terminado: false, updated_at: new Date().toISOString() })
+  });
+}
+
+async function gfMarcarListo(ronda) {
+  return await sbFetch('gf_estado?on_conflict=player_name', {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({ player_name: jugadorActual, ronda, listo: true, terminado: false, updated_at: new Date().toISOString() })
+  });
+}
+
+async function gfMarcarTerminado(ronda) {
+  return await sbFetch('gf_estado?on_conflict=player_name', {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({ player_name: jugadorActual, ronda, listo: true, terminado: true, updated_at: new Date().toISOString() })
+  });
+}
+
+async function gfGetEstados() {
+  return await sbFetch('gf_estado?select=*') || [];
+}
+
+let gfEsperandoInterval = null;
+let gfEsperaInicio = null;
+
+async function mostrarSalaDeEspera(ronda) {
+  clearInterval(gfTimerInterval);
+  clearInterval(gfHeaderInterval);
+  clearInterval(gfRecapInterval);
+  document.getElementById('mj-gf-status').style.display = 'none';
+  gfEsperaInicio = null;
+
+  document.getElementById('mj-titulo').textContent = '🏆 La Gran Final';
+  document.getElementById('mj-pregunta-num').textContent = `Ronda ${ronda}/${FINAL_QUESTIONS.length}`;
+  const body = document.getElementById('mj-body');
+  body.innerHTML = `
+    <div class="gf-espera pop">
+      <div class="gf-espera-emoji">⏳</div>
+      <div class="gf-espera-title">Sala de espera</div>
+      <div class="gf-espera-sub">Ronda ${ronda} de ${FINAL_QUESTIONS.length}</div>
+      <div class="gf-espera-count" id="gf-espera-count">Cargando...</div>
+      <button class="btn btn-primary" id="gf-btn-listo" onclick="marcarListoYEsperar(${ronda})">✅ Estoy listo</button>
+      <div class="gf-espera-nota">La ronda empieza en cuanto todos estén listos (si alguien tarda mucho, arranca igual pasado un rato)</div>
+    </div>`;
+
+  await actualizarSalaDeEspera(ronda);
+  clearInterval(gfEsperandoInterval);
+  gfEsperandoInterval = setInterval(() => actualizarSalaDeEspera(ronda), 2000);
+}
+
+async function marcarListoYEsperar(ronda) {
+  const btn = document.getElementById('gf-btn-listo');
+  if (btn) { btn.disabled = true; btn.textContent = '✅ Listo, esperando...'; }
+  try { await gfMarcarListo(ronda); } catch (err) { console.error('Error marcando listo:', err); }
+  await actualizarSalaDeEspera(ronda);
+}
+
+async function actualizarSalaDeEspera(ronda) {
+  let estados;
+  try { estados = await gfGetEstados(); } catch (err) { return; }
+
+  // Cohorte: todo el mundo que está actualmente en esta misma ronda
+  const cohorte = estados.filter(e => e.ronda === ronda);
+  const listos = cohorte.filter(e => e.listo).length;
+  const total = cohorte.length;
+
+  const countEl = document.getElementById('gf-espera-count');
+  if (countEl) countEl.textContent = `${listos}/${total} listos`;
+
+  const yaEstoyListo = cohorte.some(e => e.player_name === jugadorActual && e.listo);
+  if (!yaEstoyListo) return; // aún no has pulsado "Estoy listo"
+
+  if (!gfEsperaInicio) gfEsperaInicio = Date.now();
+  const esperando = (Date.now() - gfEsperaInicio) / 1000;
+
+  const todosListos = total > 0 && listos === total;
+  const estoySolo = total <= 1; // nadie más está en esta ronda ahora mismo
+  const timeoutFallback = esperando > 45; // por si alguien se queda colgado
+
+  if (todosListos || estoySolo || timeoutFallback) {
+    clearInterval(gfEsperandoInterval);
+    gfEsperaInicio = null;
+    empezarRondaGranFinal(ronda);
+  }
+}
+
+let gfTimerInterval = null;
+let gfHeaderInterval = null;
+let gfTiempoRestante = 0;
+let gfUltimoConteo = '';
+
+function empezarRondaGranFinal(ronda) {
+  gfRondaActual = ronda;
+  preguntaIdx = ronda - 1;
+  gfTiempoRestante = GF_ROUND_TIMES[ronda - 1] || 120;
+
+  document.getElementById('mj-gf-status').style.display = 'block';
+  actualizarBarraTiempo();
+  actualizarHeaderTerminados(ronda);
+
+  clearInterval(gfTimerInterval);
+  gfTimerInterval = setInterval(() => {
+    gfTiempoRestante--;
+    actualizarBarraTiempo();
+    if (gfTiempoRestante <= 0) {
+      clearInterval(gfTimerInterval);
+      forzarTiempoAgotado();
+    }
+  }, 1000);
+
+  clearInterval(gfHeaderInterval);
+  gfHeaderInterval = setInterval(() => actualizarHeaderTerminados(ronda), 4000);
+
+  renderPregunta();
+}
+
+function actualizarBarraTiempo() {
+  const el = document.getElementById('mj-gf-status');
+  if (!el) return;
+  const m = Math.floor(Math.max(0, gfTiempoRestante) / 60);
+  const s = Math.max(0, gfTiempoRestante) % 60;
+  el.dataset.tiempo = `⏱ ${m}:${s.toString().padStart(2, '0')}`;
+  renderizarGfStatus();
+}
+
+function renderizarGfStatus() {
+  const el = document.getElementById('mj-gf-status');
+  if (!el) return;
+  el.textContent = `${el.dataset.tiempo || ''} · ${gfUltimoConteo}`;
+}
+
+async function actualizarHeaderTerminados(ronda) {
   try {
-    await upsertFinalScore(jugadorActual, puntuacionMinijuego);
+    const estados = await gfGetEstados();
+    const total = estados.length;
+    const terminados = estados.filter(e => e.ronda > ronda || (e.ronda === ronda && e.terminado)).length;
+    gfUltimoConteo = `${terminados} de ${total} han terminado`;
+  } catch (err) {
+    gfUltimoConteo = '';
+  }
+  renderizarGfStatus();
+}
+
+function forzarTiempoAgotado() {
+  showToast('⏰ ¡Se acabó el tiempo!');
+  document.querySelectorAll('.option-btn, .img-option-btn, .papelito-num, select, input, textarea, .carrusel-arrow, #carrusel-confirm-btn, #combo-cantidad, .combo-multi-btn').forEach(el => {
+    try { el.disabled = true; } catch (e) {}
+  });
+  concluirPreguntaFinal(false);
+}
+
+// Helper compartido: lo usan todos los formatos de la Gran Final para
+// cerrar la pregunta (restar si falla, guardar progreso, marcar la ronda
+// como terminada y mostrar el recap de 30s con el ranking actualizado).
+// resultado puede ser: true (correcta, 0 pts) | 'parcial' (acertó solo una
+// de las dos partes, -625) | false (falló las dos o se acabó el tiempo, -1250)
+let finalRondaCero = null; // en qué ronda (1-10) se quedó a 0 o menos, si le pasa
+
+async function concluirPreguntaFinal(resultado) {
+  clearInterval(gfTimerInterval);
+  clearInterval(gfHeaderInterval);
+
+  let penalizacion = 0;
+  if (resultado === 'parcial') penalizacion = Math.round(FINAL_PENALTY / 2);
+  else if (resultado === false) penalizacion = FINAL_PENALTY;
+
+  if (penalizacion > 0) {
+    // OJO: aquí NO se capa en 0. Se guarda el valor real (puede ir a negativo)
+    // para poder desempatar sin ambigüedad a quienes lleguen a "0 puntos".
+    // En pantalla siempre se enseña Math.max(0, ...) para que nadie vea negativos.
+    puntuacionMinijuego -= penalizacion;
+    if (puntuacionMinijuego <= 0 && finalRondaCero === null) {
+      finalRondaCero = gfRondaActual;
+    }
+  }
+  try {
+    await upsertFinalScore(jugadorActual, puntuacionMinijuego, finalRondaCero);
   } catch (err) {
     console.error('Error guardando progreso de la Gran Final:', err);
     showToast('⚠️ No se pudo guardar tu progreso, sigue jugando');
   }
-
-  await mostrarRankingTrasPreguntaFinal(esCorrecta);
+  try {
+    await gfMarcarTerminado(gfRondaActual);
+  } catch (err) {
+    console.error('Error marcando ronda terminada:', err);
+  }
+  await mostrarRecapRonda(resultado);
 }
 
-async function mostrarRankingTrasPreguntaFinal(resultado) {
-  await actualizarRanking(); // refresca rankingData (ya incluye mi puntuación recién guardada)
+let gfRecapInterval = null;
 
-  const esUltima = preguntaIdx >= preguntasActuales.length - 1;
+// Pantalla de 30s (con ranking actualizado) que sale tras CADA ronda,
+// antes de pasar a la sala de espera de la siguiente
+async function mostrarRecapRonda(resultado) {
+  await actualizarRanking();
+
   const eliminado = puntuacionMinijuego <= 0;
+  const esUltimaRonda = gfRondaActual >= FINAL_QUESTIONS.length || eliminado;
   const body = document.getElementById('mj-body');
+  document.getElementById('mj-gf-status').style.display = 'none';
   const medals = ['🥇', '🥈', '🥉'];
 
   const filas = rankingData.map((p, i) => {
@@ -2561,32 +2804,50 @@ async function mostrarRankingTrasPreguntaFinal(resultado) {
       ? `⚠️ Casi... acertaste solo la mitad · -${Math.round(FINAL_PENALTY / 2)} pts`
       : `❌ Fallaste · -${FINAL_PENALTY} pts`;
 
-  const finToca = esUltima || eliminado;
   const eliminadoAviso = eliminado
     ? `<div class="result-banner wrong" style="margin-top:10px">💀 Te has quedado a 0 puntos, no puedes seguir contestando</div>`
     : '';
 
+  let segundos = 30;
   body.innerHTML = `
-    <div class="result-banner ${bannerClass}">
-      ${bannerText}
-    </div>
+    <div class="result-banner ${bannerClass}">${bannerText}</div>
     ${eliminadoAviso}
     <div class="score-display">
       <div class="score-label">Tu puntuación ahora</div>
       <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
     </div>
-    <div class="ranking-title" style="font-size:20px;margin:8px 0">🏆 Ranking en vivo</div>
+    <div class="ranking-title" style="font-size:20px;margin:8px 0">🏆 Ranking tras la ronda ${gfRondaActual}</div>
     <div class="ranking-list">${filas}</div>
     <div style="text-align:center;margin-top:16px">
-      <button class="btn btn-primary" style="max-width:340px" onclick="${finToca ? 'finalizarGranFinal()' : 'siguienteFinalPregunta()'}">
-        ${finToca ? 'Ver clasificación final 🏆' : 'Siguiente pregunta →'}
-      </button>
+      <div id="recap-countdown" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+      <button class="btn btn-primary" style="max-width:340px" onclick="continuarTrasRecap()">Continuar ahora →</button>
     </div>`;
+
+  const actualizarTexto = () => {
+    const el = document.getElementById('recap-countdown');
+    if (!el) return;
+    el.textContent = esUltimaRonda ? `Viendo resultados en ${segundos}s...` : `Siguiente ronda en ${segundos}s...`;
+  };
+  actualizarTexto();
+
+  clearInterval(gfRecapInterval);
+  gfRecapInterval = setInterval(() => {
+    segundos--;
+    actualizarTexto();
+    if (segundos <= 0) {
+      clearInterval(gfRecapInterval);
+      continuarTrasRecap();
+    }
+  }, 1000);
 }
 
-function siguienteFinalPregunta() {
-  preguntaIdx++;
-  renderPregunta();
+function continuarTrasRecap() {
+  clearInterval(gfRecapInterval);
+  if (gfRondaActual >= FINAL_QUESTIONS.length || puntuacionMinijuego <= 0) {
+    finalizarGranFinal();
+  } else {
+    mostrarSalaDeEspera(gfRondaActual + 1);
+  }
 }
 
 async function finalizarGranFinal() {
@@ -2608,36 +2869,6 @@ async function finalizarGranFinal() {
 
   // Por si has sido tú quien acaba de completar el último hueco que faltaba
   if (todosHanTerminado()) mostrarPopupGanador();
-}
-
-// Helper compartido: lo usan tanto las preguntas tipo trivia como las tipo
-// frase de la Gran Final para cerrar la pregunta (restar si falla, guardar
-// progreso y mostrar el ranking en vivo con el botón de continuar).
-// resultado puede ser: true (correcta, 0 pts) | 'parcial' (acertó solo una
-// de las dos partes, -625) | false (falló las dos, -1250)
-let finalRondaCero = null; // en qué pregunta (1-10) se quedó a 0 o menos, si le pasa
-
-async function concluirPreguntaFinal(resultado) {
-  let penalizacion = 0;
-  if (resultado === 'parcial') penalizacion = Math.round(FINAL_PENALTY / 2);
-  else if (resultado === false) penalizacion = FINAL_PENALTY;
-
-  if (penalizacion > 0) {
-    // OJO: aquí NO se capa en 0. Se guarda el valor real (puede ir a negativo)
-    // para poder desempatar sin ambigüedad a quienes lleguen a "0 puntos".
-    // En pantalla siempre se enseña Math.max(0, ...) para que nadie vea negativos.
-    puntuacionMinijuego -= penalizacion;
-    if (puntuacionMinijuego <= 0 && finalRondaCero === null) {
-      finalRondaCero = preguntaIdx + 1; // nº de pregunta (1-indexado) en la que cayó
-    }
-  }
-  try {
-    await upsertFinalScore(jugadorActual, puntuacionMinijuego, finalRondaCero);
-  } catch (err) {
-    console.error('Error guardando progreso de la Gran Final:', err);
-    showToast('⚠️ No se pudo guardar tu progreso, sigue jugando');
-  }
-  await mostrarRankingTrasPreguntaFinal(resultado);
 }
 
 // ── Preguntas tipo "Completa la frase" dentro de la Gran Final ──
@@ -3152,7 +3383,7 @@ let popupGanadorMostrado = false;
 
 function mostrarPopupGanador() {
   if (popupGanadorMostrado) return;
-  const ganador = rankingData[0];
+  const ganador = elegiblesPremioCastigo()[0];
   if (!ganador) return;
   popupGanadorMostrado = true;
 
@@ -3271,9 +3502,20 @@ async function setCastigoResultado(numero, texto) {
 
 // El castigado es quien queda último en el ranking real, una vez todos
 // han terminado La Gran Final (misma base que el popup del ganador)
+// Juanki y Ale no vienen a la fiesta: pueden jugar La Gran Final normal,
+// pero no optan ni al premio ni al castigo (se excluyen al determinar
+// ganador/castigado, aunque sus puntos siguen contando y viéndose igual)
+const EXCLUDED_CASTIGO_PREMIO = ['Juanki', 'Ale', 'Prueba Juanki'];
+
+function elegiblesPremioCastigo() {
+  return rankingData.filter(p => !EXCLUDED_CASTIGO_PREMIO.includes(p.nombre));
+}
+
 function esElCastigado() {
   if (!todosHanTerminado() || !rankingData.length) return false;
-  return rankingData[rankingData.length - 1].nombre === jugadorActual;
+  const candidatos = elegiblesPremioCastigo();
+  if (!candidatos.length) return false;
+  return candidatos[candidatos.length - 1].nombre === jugadorActual;
 }
 
 let numeroPapelitoElegido = null;
@@ -3303,21 +3545,6 @@ async function probarCastigoComoCastigado() {
 
 async function renderCastigoModalContent(forzarRevelado = null, forzarCastigado = null) {
   const cont = document.getElementById('castigo-modal-content');
-  const revelado = forzarRevelado !== null ? forzarRevelado : todosHanTerminado();
-
-  if (!revelado) {
-    const terminados = rankingData.filter(p => p.scores.final !== undefined).length;
-    cont.innerHTML = `
-      <div class="castigo-modal-emoji">🔥🤫</div>
-      <div class="castigo-modal-title">Pista...</div>
-      <div class="castigo-modal-text">
-        Todos vais a aportar vuestro granito de fuego, en secreto.<br><br>
-        El día de la fiesta, el destino le pondrá al perdedor <b>varias opciones</b> sobre la mesa... y tendrá que elegir una. 😈<br><br>
-        <span style="opacity:0.6;font-size:12px">(${terminados}/${rankingData.length} han terminado La Gran Final)</span>
-      </div>
-      <button class="btn btn-primary" onclick="cerrarCastigoModal()">Uy... 🔥</button>`;
-    return;
-  }
 
   let papeles, resultado;
   try {
@@ -3342,8 +3569,10 @@ async function renderCastigoModalContent(forzarRevelado = null, forzarCastigado 
     return;
   }
 
-  // Eres el castigado: eliges TÚ 3 números (a ciegas, sin saber qué ponen)
-  const soyElCastigado = forzarCastigado !== null ? forzarCastigado : esElCastigado();
+  // Solo se sabe quién es el castigado cuando todos han terminado La Gran Final
+  const revelado = forzarRevelado !== null ? forzarRevelado : todosHanTerminado();
+  const soyElCastigado = forzarCastigado !== null ? forzarCastigado : (revelado && esElCastigado());
+
   if (soyElCastigado) {
     if (papeles.length < 3) {
       cont.innerHTML = `
@@ -3367,7 +3596,11 @@ async function renderCastigoModalContent(forzarRevelado = null, forzarCastigado 
     return;
   }
 
-  // No eres el castigado: puedes escribir tu papelito si aún no lo hiciste
+  // Excluidos del premio/castigo pueden escribir igualmente, no pasa nada (ver aviso al jugar la Gran Final)
+
+  // Si no eres (o aún no se sabe si eres) el castigado: puedes escribir tu
+  // papelito YA MISMO, sin esperar a que termine nadie (nadie sabe aún quién
+  // será el castigado, así que no hay piedad posible al escribir)
   const miPapel = papeles.find(p => p.player_name === jugadorActual);
   if (miPapel) {
     cont.innerHTML = `
@@ -3388,7 +3621,7 @@ async function renderCastigoModalContent(forzarRevelado = null, forzarCastigado 
   cont.innerHTML = `
     <div class="castigo-modal-emoji">📝🔥</div>
     <div class="castigo-modal-title">Elige tu papelito</div>
-    <div class="castigo-modal-text" style="font-size:12px">Elige un número libre y escribe el reto que le tocará cumplir al castigado si sale tu papel.</div>
+    <div class="castigo-modal-text" style="font-size:12px">Elige un número libre y escribe el reto que le tocará cumplir al castigado si sale tu papel. Puedes escribirlo ya, antes de que se sepa quién será.</div>
     <div class="papelitos-grid">${numerosHtml}</div>
     <div id="papelito-form" style="display:none;margin-top:14px">
       <textarea id="papelito-reto" class="papelito-textarea" placeholder="Escribe el reto..." maxlength="200"></textarea>
