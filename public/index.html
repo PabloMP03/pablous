@@ -1909,9 +1909,14 @@ function mostrarAvisoExcluido() {
 async function iniciarFlujoGranFinal() {
   try { await gfRegistrarEntrada(); } catch (err) { console.error('Error registrando entrada a la Gran Final:', err); }
 
-  if (esPrueba(jugadorActual) || EXCLUDED_CASTIGO_PREMIO.includes(jugadorActual)) {
-    // Admin / testers / excluidos de premio-castigo: sin sala de espera,
-    // juegan a su ritmo sin sincronizarse con el resto
+  // Solo el admin y los excluidos de premio/castigo van "en solitario".
+  // Prueba 1/2/3 SÍ pasan por la sala de espera, pero sincronizados solo
+  // entre ellos tres (ver TEST_SYNC_ROSTER), para poder probar la mecánica real.
+  const vaSolo = jugadorActual === ADMIN
+    || EXCLUDED_CASTIGO_PREMIO.includes(jugadorActual)
+    || (esPrueba(jugadorActual) && !TEST_SYNC_ROSTER.includes(jugadorActual));
+
+  if (vaSolo) {
     empezarRondaGranFinal(1);
   } else {
     await mostrarSalaDeEspera();
@@ -2587,7 +2592,15 @@ async function responderFinal(idx, correcta) {
 // (Ale y Juanki juegan igualmente, pero a su ritmo, sin esperar ni ser
 // esperados por el resto). Se calcula solo de NOMBRES_GRUPO: si el número
 // no cuadra con la gente real, basta con editar esa lista.
+// Prueba 1/2/3 forman su PROPIO grupo sincronizado de 3, para poder probar
+// la sala de espera y el ranking en vivo sin necesitar a las 15 personas
+// reales (abriendo 3 pestañas/móviles con esos perfiles a la vez)
+const TEST_SYNC_ROSTER = ['Prueba 1', 'Prueba 2', 'Prueba 3'];
+
 function participantesEsperados() {
+  if (TEST_SYNC_ROSTER.includes(jugadorActual)) {
+    return TEST_SYNC_ROSTER;
+  }
   return NOMBRES_GRUPO.filter(n => n !== ADMIN && !EXCLUDED_CASTIGO_PREMIO.includes(n) && !NO_JUEGA_GRAN_FINAL.includes(n));
 }
 
