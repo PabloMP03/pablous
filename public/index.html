@@ -1057,10 +1057,6 @@
         <option>Roberto</option>
         <option>Sofia</option>
         <option>Wili</option>
-        <option>Prueba 1</option>
-        <option>Prueba 2</option>
-        <option>Prueba 3</option>
-        <option>Prueba Juanki</option>
       </select>
     </div>
     <button class="btn btn-primary" onclick="entrar()">Entrar al juego 🎮</button>
@@ -1370,7 +1366,7 @@ let jugadorActual = '';
 const ADMIN = "Pablo";
 // Perfiles de PRUEBA: juegos desbloqueados aunque no sea la fecha + repetición libre.
 // ⚠️ Antes de la fiesta, vacía esta lista para que nadie tenga ventaja
-const TESTERS = ['Prueba 1', 'Prueba 2', 'Prueba 3', 'Prueba Juanki'];
+const TESTERS = [];
 function esPrueba(nombre) { return nombre === ADMIN || TESTERS.includes(nombre); }
 let misScores = {};
 let rankingData = [];
@@ -2595,7 +2591,7 @@ async function responderFinal(idx, correcta) {
 // Prueba 1/2/3 forman su PROPIO grupo sincronizado de 3, para poder probar
 // la sala de espera y el ranking en vivo sin necesitar a las 15 personas
 // reales (abriendo 3 pestañas/móviles con esos perfiles a la vez)
-const TEST_SYNC_ROSTER = ['Prueba 1', 'Prueba 2', 'Prueba 3'];
+const TEST_SYNC_ROSTER = [];
 
 function participantesEsperados() {
   if (TEST_SYNC_ROSTER.includes(jugadorActual)) {
@@ -3634,7 +3630,7 @@ async function setCastigoResultado(numero, texto) {
 // Juanki y Ale no vienen a la fiesta: pueden jugar La Gran Final normal,
 // pero no optan ni al premio ni al castigo (se excluyen al determinar
 // ganador/castigado, aunque sus puntos siguen contando y viéndose igual)
-const EXCLUDED_CASTIGO_PREMIO = ['Juanki', 'Ale', 'Prueba Juanki'];
+const EXCLUDED_CASTIGO_PREMIO = ['Juanki', 'Ale'];
 
 // Gente que se queda en NOMBRES_GRUPO (para las fotos/eventos) pero que
 // no va a jugar La Gran Final en absoluto, así que no cuenta en la sala
