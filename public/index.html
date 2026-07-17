@@ -1847,6 +1847,7 @@ function volverLobby() {
   clearInterval(gfHeaderInterval);
   clearInterval(gfEsperandoInterval);
   clearInterval(gfRecapInterval);
+  clearInterval(gfEsperandoDemasInterval);
   showScreen('lobby');
   actualizarRanking();
 }
@@ -1908,11 +1909,12 @@ function mostrarAvisoExcluido() {
 async function iniciarFlujoGranFinal() {
   try { await gfRegistrarEntrada(); } catch (err) { console.error('Error registrando entrada a la Gran Final:', err); }
 
-  if (esPrueba(jugadorActual)) {
-    // Admin / testers: sin sala de espera, para poder probar solos
+  if (esPrueba(jugadorActual) || EXCLUDED_CASTIGO_PREMIO.includes(jugadorActual)) {
+    // Admin / testers / excluidos de premio-castigo: sin sala de espera,
+    // juegan a su ritmo sin sincronizarse con el resto
     empezarRondaGranFinal(1);
   } else {
-    await mostrarSalaDeEspera(1);
+    await mostrarSalaDeEspera();
   }
 }
 
@@ -2577,8 +2579,22 @@ async function responderFinal(idx, correcta) {
 }
 
 // ══════════════════════════════════════════════
-// GRAN FINAL: sala de espera + rondas con tiempo
+// GRAN FINAL: sala de espera + rondas sincronizadas
 // ══════════════════════════════════════════════
+
+// Roster FIJO de quién debe ir sincronizado en La Gran Final: todo el
+// grupo menos el admin y menos quien esté excluido de premio/castigo
+// (Ale y Juanki juegan igualmente, pero a su ritmo, sin esperar ni ser
+// esperados por el resto). Se calcula solo de NOMBRES_GRUPO: si el número
+// no cuadra con la gente real, basta con editar esa lista.
+function participantesEsperados() {
+  return NOMBRES_GRUPO.filter(n => n !== ADMIN && !EXCLUDED_CASTIGO_PREMIO.includes(n) && !NO_JUEGA_GRAN_FINAL.includes(n));
+}
+
+function esParticipanteSincronizado(nombre) {
+  return participantesEsperados().includes(nombre);
+}
+
 async function gfRegistrarEntrada() {
   return await sbFetch('gf_estado?on_conflict=player_name', {
     method: 'POST',
@@ -2607,70 +2623,73 @@ async function gfGetEstados() {
   return await sbFetch('gf_estado?select=*') || [];
 }
 
+// ── SALA DE ESPERA (solo antes de la ronda 1) ──
 let gfEsperandoInterval = null;
 let gfEsperaInicio = null;
 
-async function mostrarSalaDeEspera(ronda) {
+async function mostrarSalaDeEspera() {
   clearInterval(gfTimerInterval);
   clearInterval(gfHeaderInterval);
   clearInterval(gfRecapInterval);
+  clearInterval(gfEsperandoInterval);
+  clearInterval(gfEsperandoDemasInterval);
   document.getElementById('mj-gf-status').style.display = 'none';
   gfEsperaInicio = null;
 
   document.getElementById('mj-titulo').textContent = '🏆 La Gran Final';
-  document.getElementById('mj-pregunta-num').textContent = `Ronda ${ronda}/${FINAL_QUESTIONS.length}`;
+  document.getElementById('mj-pregunta-num').textContent = `Ronda 1/${FINAL_QUESTIONS.length}`;
   const body = document.getElementById('mj-body');
+  const total = participantesEsperados().length;
   body.innerHTML = `
     <div class="gf-espera pop">
       <div class="gf-espera-emoji">⏳</div>
       <div class="gf-espera-title">Sala de espera</div>
-      <div class="gf-espera-sub">Ronda ${ronda} de ${FINAL_QUESTIONS.length}</div>
+      <div class="gf-espera-sub">Esperando a que todos estén listos para empezar</div>
       <div class="gf-espera-count" id="gf-espera-count">Cargando...</div>
-      <button class="btn btn-primary" id="gf-btn-listo" onclick="marcarListoYEsperar(${ronda})">✅ Estoy listo</button>
-      <div class="gf-espera-nota">La ronda empieza en cuanto todos estén listos (si alguien tarda mucho, arranca igual pasado un rato)</div>
+      <button class="btn btn-primary" id="gf-btn-listo" onclick="marcarListoYEsperar()">✅ Estoy listo</button>
+      <div class="gf-espera-nota">Sois ${total} en la sala. La ronda empieza en cuanto todos estéis listos (o pasado un rato si alguien tarda mucho).</div>
     </div>`;
 
-  await actualizarSalaDeEspera(ronda);
+  await actualizarSalaDeEspera();
   clearInterval(gfEsperandoInterval);
-  gfEsperandoInterval = setInterval(() => actualizarSalaDeEspera(ronda), 2000);
+  gfEsperandoInterval = setInterval(actualizarSalaDeEspera, 2000);
 }
 
-async function marcarListoYEsperar(ronda) {
+async function marcarListoYEsperar() {
   const btn = document.getElementById('gf-btn-listo');
   if (btn) { btn.disabled = true; btn.textContent = '✅ Listo, esperando...'; }
-  try { await gfMarcarListo(ronda); } catch (err) { console.error('Error marcando listo:', err); }
-  await actualizarSalaDeEspera(ronda);
+  try { await gfMarcarListo(1); } catch (err) { console.error('Error marcando listo:', err); }
+  await actualizarSalaDeEspera();
 }
 
-async function actualizarSalaDeEspera(ronda) {
+async function actualizarSalaDeEspera() {
   let estados;
   try { estados = await gfGetEstados(); } catch (err) { return; }
 
-  // Cohorte: todo el mundo que está actualmente en esta misma ronda
-  const cohorte = estados.filter(e => e.ronda === ronda);
-  const listos = cohorte.filter(e => e.listo).length;
-  const total = cohorte.length;
+  const roster = participantesEsperados();
+  const relevantes = estados.filter(e => roster.includes(e.player_name) && e.ronda === 1);
+  const listos = relevantes.filter(e => e.listo).length;
+  const total = roster.length;
 
   const countEl = document.getElementById('gf-espera-count');
   if (countEl) countEl.textContent = `${listos}/${total} listos`;
 
-  const yaEstoyListo = cohorte.some(e => e.player_name === jugadorActual && e.listo);
+  const yaEstoyListo = relevantes.some(e => e.player_name === jugadorActual && e.listo);
   if (!yaEstoyListo) return; // aún no has pulsado "Estoy listo"
 
   if (!gfEsperaInicio) gfEsperaInicio = Date.now();
   const esperando = (Date.now() - gfEsperaInicio) / 1000;
+  const todosListos = total > 0 && listos >= total;
+  const timeoutFallback = esperando > 90; // por si alguien se queda colgado
 
-  const todosListos = total > 0 && listos === total;
-  const estoySolo = total <= 1; // nadie más está en esta ronda ahora mismo
-  const timeoutFallback = esperando > 45; // por si alguien se queda colgado
-
-  if (todosListos || estoySolo || timeoutFallback) {
+  if (todosListos || timeoutFallback) {
     clearInterval(gfEsperandoInterval);
     gfEsperaInicio = null;
-    empezarRondaGranFinal(ronda);
+    empezarRondaGranFinal(1);
   }
 }
 
+// ── TEMPORIZADOR Y HEADER EN VIVO DE CADA RONDA ──
 let gfTimerInterval = null;
 let gfHeaderInterval = null;
 let gfTiempoRestante = 0;
@@ -2719,8 +2738,10 @@ function renderizarGfStatus() {
 async function actualizarHeaderTerminados(ronda) {
   try {
     const estados = await gfGetEstados();
-    const total = estados.length;
-    const terminados = estados.filter(e => e.ronda > ronda || (e.ronda === ronda && e.terminado)).length;
+    const roster = participantesEsperados();
+    const relevantes = estados.filter(e => roster.includes(e.player_name));
+    const total = roster.length;
+    const terminados = relevantes.filter(e => e.ronda > ronda || (e.ronda === ronda && e.terminado)).length;
     gfUltimoConteo = `${terminados} de ${total} han terminado`;
   } catch (err) {
     gfUltimoConteo = '';
@@ -2736,9 +2757,7 @@ function forzarTiempoAgotado() {
   concluirPreguntaFinal(false);
 }
 
-// Helper compartido: lo usan todos los formatos de la Gran Final para
-// cerrar la pregunta (restar si falla, guardar progreso, marcar la ronda
-// como terminada y mostrar el recap de 30s con el ranking actualizado).
+// ── CIERRE DE CADA PREGUNTA (helper compartido por todos los formatos) ──
 // resultado puede ser: true (correcta, 0 pts) | 'parcial' (acertó solo una
 // de las dos partes, -625) | false (falló las dos o se acabó el tiempo, -1250)
 let finalRondaCero = null; // en qué ronda (1-10) se quedó a 0 o menos, si le pasa
@@ -2766,27 +2785,107 @@ async function concluirPreguntaFinal(resultado) {
     console.error('Error guardando progreso de la Gran Final:', err);
     showToast('⚠️ No se pudo guardar tu progreso, sigue jugando');
   }
+
+  // Si te quedas eliminado (0 o menos), marca tu ronda como "más allá de la
+  // última" para que no bloquees eternamente el recuento de rondas futuras
+  // de quienes sí siguen jugando
+  const eliminado = puntuacionMinijuego <= 0;
+  const rondaAGuardar = eliminado ? (FINAL_QUESTIONS.length + 1) : gfRondaActual;
   try {
-    await gfMarcarTerminado(gfRondaActual);
+    await gfMarcarTerminado(rondaAGuardar);
   } catch (err) {
     console.error('Error marcando ronda terminada:', err);
   }
-  await mostrarRecapRonda(resultado);
+
+  if (esParticipanteSincronizado(jugadorActual)) {
+    await mostrarEsperandoDemas(resultado);
+  } else {
+    await mostrarRecapSolo(resultado);
+  }
 }
 
-let gfRecapInterval = null;
+function pintarBannerYRanking(resultado) {
+  const eliminado = puntuacionMinijuego <= 0;
+  const bannerClass = resultado === true ? 'correct' : resultado === 'parcial' ? 'partial' : 'wrong';
+  const bannerText = resultado === true
+    ? '✅ ¡Correcto!'
+    : resultado === 'parcial'
+      ? `⚠️ Casi... acertaste solo la mitad · -${Math.round(FINAL_PENALTY / 2)} pts`
+      : `❌ Fallaste · -${FINAL_PENALTY} pts`;
+  const eliminadoAviso = eliminado
+    ? `<div class="result-banner wrong" style="margin-top:10px">💀 Te has quedado a 0 puntos, no puedes seguir contestando</div>`
+    : '';
+  const medals = ['🥇', '🥈', '🥉'];
+  const filas = rankingData.map((p, i) => {
+    const esYo = p.nombre === jugadorActual;
+    return `
+      <div class="ranking-item ${esYo ? 'me' : ''}">
+        <div class="rank-pos">${medals[i] || (i + 1)}</div>
+        <div class="rank-info"><div class="rank-name">${p.nombre}${esYo ? ' (tú)' : ''}</div></div>
+        <div class="rank-score">${Math.max(0, p.total)}</div>
+      </div>`;
+  }).join('');
+  return { bannerClass, bannerText, eliminadoAviso, filas };
+}
 
-// Pantalla de 30s (con ranking actualizado) que sale tras CADA ronda,
-// antes de pasar a la sala de espera de la siguiente
-async function mostrarRecapRonda(resultado) {
+// ── FLUJO SINCRONIZADO (roster de participantesEsperados) ──
+// Al terminar tu ronda: ranking PROVISIONAL que se refresca cada 4s hasta
+// que todos han terminado esa misma ronda; entonces pasa solo al ranking
+// definitivo de la ronda (30s) y avanza a la siguiente sin pedir "listo".
+let gfEsperandoDemasInterval = null;
+
+async function mostrarEsperandoDemas(resultado) {
+  await actualizarRanking();
+  document.getElementById('mj-gf-status').style.display = 'none';
+  const body = document.getElementById('mj-body');
+  const ronda = gfRondaActual;
+
+  function pintar(terminados, total) {
+    const { bannerClass, bannerText, eliminadoAviso, filas } = pintarBannerYRanking(resultado);
+    body.innerHTML = `
+      <div class="result-banner ${bannerClass}">${bannerText}</div>
+      ${eliminadoAviso}
+      <div class="score-display">
+        <div class="score-label">Tu puntuación ahora</div>
+        <div class="score-value">${Math.max(0, puntuacionMinijuego)}</div>
+      </div>
+      <div style="text-align:center;font-size:13px;color:var(--accent3);font-weight:700;margin:10px 0">
+        ⏳ Esperando a los demás... (${terminados}/${total} han terminado la ronda)
+      </div>
+      <div class="ranking-title" style="font-size:18px;margin:8px 0">📊 Ranking provisional</div>
+      <div class="ranking-list">${filas}</div>`;
+  }
+
+  async function refrescar() {
+    let estados = [];
+    try { estados = await gfGetEstados(); } catch (err) { console.error(err); }
+    const roster = participantesEsperados();
+    const relevantes = estados.filter(e => roster.includes(e.player_name));
+    const total = roster.length;
+    const terminados = relevantes.filter(e => e.ronda > ronda || (e.ronda === ronda && e.terminado)).length;
+
+    await actualizarRanking();
+    pintar(terminados, total);
+
+    if (total > 0 && terminados >= total) {
+      clearInterval(gfEsperandoDemasInterval);
+      mostrarRankingDefinitivoRonda();
+    }
+  }
+
+  pintar(0, participantesEsperados().length);
+  await refrescar();
+  clearInterval(gfEsperandoDemasInterval);
+  gfEsperandoDemasInterval = setInterval(refrescar, 4000);
+}
+
+async function mostrarRankingDefinitivoRonda() {
+  clearInterval(gfEsperandoDemasInterval);
   await actualizarRanking();
 
-  const eliminado = puntuacionMinijuego <= 0;
-  const esUltimaRonda = gfRondaActual >= FINAL_QUESTIONS.length || eliminado;
+  const esUltimaRonda = gfRondaActual >= FINAL_QUESTIONS.length || puntuacionMinijuego <= 0;
   const body = document.getElementById('mj-body');
-  document.getElementById('mj-gf-status').style.display = 'none';
   const medals = ['🥇', '🥈', '🥉'];
-
   const filas = rankingData.map((p, i) => {
     const esYo = p.nombre === jugadorActual;
     return `
@@ -2797,18 +2896,49 @@ async function mostrarRecapRonda(resultado) {
       </div>`;
   }).join('');
 
-  const bannerClass = resultado === true ? 'correct' : resultado === 'parcial' ? 'partial' : 'wrong';
-  const bannerText = resultado === true
-    ? '✅ ¡Correcto!'
-    : resultado === 'parcial'
-      ? `⚠️ Casi... acertaste solo la mitad · -${Math.round(FINAL_PENALTY / 2)} pts`
-      : `❌ Fallaste · -${FINAL_PENALTY} pts`;
-
-  const eliminadoAviso = eliminado
-    ? `<div class="result-banner wrong" style="margin-top:10px">💀 Te has quedado a 0 puntos, no puedes seguir contestando</div>`
-    : '';
-
   let segundos = 30;
+  body.innerHTML = `
+    <div class="ranking-title" style="font-size:20px;margin:8px 0;text-align:center">🏆 Ranking definitivo · Ronda ${gfRondaActual}</div>
+    <div class="ranking-list">${filas}</div>
+    <div style="text-align:center;margin-top:16px">
+      <div id="recap-countdown" style="font-size:12px;color:var(--muted)"></div>
+    </div>`;
+
+  const actualizarTexto = () => {
+    const el = document.getElementById('recap-countdown');
+    if (el) el.textContent = esUltimaRonda ? `Viendo resultados en ${segundos}s...` : `Siguiente ronda en ${segundos}s...`;
+  };
+  actualizarTexto();
+
+  clearInterval(gfRecapInterval);
+  gfRecapInterval = setInterval(() => {
+    segundos--;
+    actualizarTexto();
+    if (segundos <= 0) {
+      clearInterval(gfRecapInterval);
+      continuarTrasRondaDefinitiva();
+    }
+  }, 1000);
+}
+
+function continuarTrasRondaDefinitiva() {
+  clearInterval(gfRecapInterval);
+  if (gfRondaActual >= FINAL_QUESTIONS.length || puntuacionMinijuego <= 0) {
+    finalizarGranFinal();
+  } else {
+    empezarRondaGranFinal(gfRondaActual + 1); // sin sala de espera, directo
+  }
+}
+
+// ── FLUJO EN SOLITARIO (admin / testers / Ale / Juanki) ──
+// No esperan a nadie ni son esperados: avanzan a su ritmo con un botón manual.
+async function mostrarRecapSolo(resultado) {
+  await actualizarRanking();
+  document.getElementById('mj-gf-status').style.display = 'none';
+  const body = document.getElementById('mj-body');
+  const esUltimaRonda = gfRondaActual >= FINAL_QUESTIONS.length || puntuacionMinijuego <= 0;
+  const { bannerClass, bannerText, eliminadoAviso, filas } = pintarBannerYRanking(resultado);
+
   body.innerHTML = `
     <div class="result-banner ${bannerClass}">${bannerText}</div>
     ${eliminadoAviso}
@@ -2819,39 +2949,23 @@ async function mostrarRecapRonda(resultado) {
     <div class="ranking-title" style="font-size:20px;margin:8px 0">🏆 Ranking tras la ronda ${gfRondaActual}</div>
     <div class="ranking-list">${filas}</div>
     <div style="text-align:center;margin-top:16px">
-      <div id="recap-countdown" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
-      <button class="btn btn-primary" style="max-width:340px" onclick="continuarTrasRecap()">Continuar ahora →</button>
+      <button class="btn btn-primary" style="max-width:340px" onclick="continuarSolo()">
+        ${esUltimaRonda ? 'Ver resultado final →' : 'Siguiente ronda →'}
+      </button>
     </div>`;
-
-  const actualizarTexto = () => {
-    const el = document.getElementById('recap-countdown');
-    if (!el) return;
-    el.textContent = esUltimaRonda ? `Viendo resultados en ${segundos}s...` : `Siguiente ronda en ${segundos}s...`;
-  };
-  actualizarTexto();
-
-  clearInterval(gfRecapInterval);
-  gfRecapInterval = setInterval(() => {
-    segundos--;
-    actualizarTexto();
-    if (segundos <= 0) {
-      clearInterval(gfRecapInterval);
-      continuarTrasRecap();
-    }
-  }, 1000);
 }
 
-function continuarTrasRecap() {
-  clearInterval(gfRecapInterval);
+function continuarSolo() {
   if (gfRondaActual >= FINAL_QUESTIONS.length || puntuacionMinijuego <= 0) {
     finalizarGranFinal();
   } else {
-    mostrarSalaDeEspera(gfRondaActual + 1);
+    empezarRondaGranFinal(gfRondaActual + 1);
   }
 }
 
 async function finalizarGranFinal() {
   misScores['final'] = puntuacionMinijuego;
+  try { await gfMarcarTerminado(FINAL_QUESTIONS.length + 1); } catch (err) { console.error(err); }
   await actualizarRanking(); // refresca ya, por si eres el último en terminar
 
   const body = document.getElementById('mj-body');
@@ -2870,6 +2984,7 @@ async function finalizarGranFinal() {
   // Por si has sido tú quien acaba de completar el último hueco que faltaba
   if (todosHanTerminado()) mostrarPopupGanador();
 }
+
 
 // ── Preguntas tipo "Completa la frase" dentro de la Gran Final ──
 // Reutiliza el mismo Wordle (buildWordleGrid/buildKeyboard/presionarTecla)
@@ -3507,6 +3622,11 @@ async function setCastigoResultado(numero, texto) {
 // ganador/castigado, aunque sus puntos siguen contando y viéndose igual)
 const EXCLUDED_CASTIGO_PREMIO = ['Juanki', 'Ale', 'Prueba Juanki'];
 
+// Gente que se queda en NOMBRES_GRUPO (para las fotos/eventos) pero que
+// no va a jugar La Gran Final en absoluto, así que no cuenta en la sala
+// de espera ni en el recuento de "cuántos han terminado"
+const NO_JUEGA_GRAN_FINAL = ['Maria'];
+
 function elegiblesPremioCastigo() {
   return rankingData.filter(p => !EXCLUDED_CASTIGO_PREMIO.includes(p.nombre));
 }
@@ -3569,6 +3689,16 @@ async function renderCastigoModalContent(forzarRevelado = null, forzarCastigado 
     return;
   }
 
+  // Excluidos de premio/castigo: ni escriben papelito ni pueden ser el castigado
+  if (EXCLUDED_CASTIGO_PREMIO.includes(jugadorActual)) {
+    cont.innerHTML = `
+      <div class="castigo-modal-emoji">🙈</div>
+      <div class="castigo-modal-title">No participas en esto</div>
+      <div class="castigo-modal-text">Como no vienes a la fiesta, no puedes escribir papelito ni ser el castigado. ¡Pero seguro te enteras del cotilleo! 😄</div>
+      <button class="btn btn-primary" onclick="cerrarCastigoModal()">Vale</button>`;
+    return;
+  }
+
   // Solo se sabe quién es el castigado cuando todos han terminado La Gran Final
   const revelado = forzarRevelado !== null ? forzarRevelado : todosHanTerminado();
   const soyElCastigado = forzarCastigado !== null ? forzarCastigado : (revelado && esElCastigado());
@@ -3613,7 +3743,7 @@ async function renderCastigoModalContent(forzarRevelado = null, forzarCastigado 
   }
 
   const ocupados = new Set(papeles.map(p => p.numero));
-  const numerosHtml = Array.from({ length: 17 }, (_, i) => i + 1).map(n => {
+  const numerosHtml = Array.from({ length: 16 }, (_, i) => i + 1).map(n => {
     const ocupado = ocupados.has(n);
     return `<button class="papelito-num ${ocupado ? 'ocupado' : ''}" ${ocupado ? 'disabled' : ''} onclick="elegirNumeroPapelito(${n}, this)">${n}</button>`;
   }).join('');
