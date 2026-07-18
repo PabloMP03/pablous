@@ -1853,7 +1853,10 @@ function volverLobby() {
 // ══════════════════════════════════════════════
 function startMinijuego(id) {
 
-  if (misScores[id] !== undefined && !esPrueba(jugadorActual)) {
+  // La Gran Final se excluye de este check: guarda progreso tras CADA ronda
+  // (no solo al terminar las 10), así que "ya tiene puntuación" no significa
+  // "ya la terminó". Su propia lógica de reconexión decide qué hacer.
+  if (id !== 'final' && misScores[id] !== undefined && !esPrueba(jugadorActual)) {
     showCompletado(id);
     return;
   }
@@ -1903,14 +1906,52 @@ function mostrarAvisoExcluido() {
 }
 
 async function iniciarFlujoGranFinal() {
-  try { await gfRegistrarEntrada(); } catch (err) { console.error('Error registrando entrada a la Gran Final:', err); }
-
   // Solo el admin y los excluidos de premio/castigo van "en solitario".
   // Prueba 1/2/3 SÍ pasan por la sala de espera, pero sincronizados solo
   // entre ellos tres (ver TEST_SYNC_ROSTER), para poder probar la mecánica real.
   const vaSolo = jugadorActual === ADMIN
     || EXCLUDED_CASTIGO_PREMIO.includes(jugadorActual)
     || (esPrueba(jugadorActual) && !TEST_SYNC_ROSTER.includes(jugadorActual));
+
+  // Si se le cerró la app o perdió la conexión, al volver a entrar debe
+  // RETOMAR donde se quedó, no reiniciarse (si no, se queda esperando para
+  // siempre a gente que ya avanzó de ronda y nunca "vuelve" a la ronda 1)
+  let estadoPrevio = null;
+  try {
+    const estados = await gfGetEstados();
+    estadoPrevio = estados.find(e => e.player_name === jugadorActual) || null;
+  } catch (err) {
+    console.error('Error comprobando progreso previo:', err);
+  }
+
+  if (estadoPrevio && (estadoPrevio.ronda > 1 || estadoPrevio.terminado)) {
+    // Recupera tu puntuación real guardada (no la vuelvas a calcular desde
+    // cero, ya llevas rondas jugadas con penalizaciones aplicadas)
+    if (misScores['final'] !== undefined) puntuacionMinijuego = misScores['final'];
+
+    const rondaGuardada = estadoPrevio.ronda;
+    if (rondaGuardada > FINAL_QUESTIONS.length) {
+      // Ya había terminado toda la Gran Final antes
+      finalizarGranFinal();
+      return;
+    }
+    gfRondaActual = rondaGuardada;
+    if (estadoPrevio.terminado) {
+      // Ya había respondido esa ronda: reengancha a la espera/ranking de esa ronda
+      if (vaSolo) {
+        continuarSolo();
+      } else {
+        await mostrarEsperandoDemas(null);
+      }
+    } else {
+      // Estaba a mitad de esa ronda: se le reinicia el cronómetro de esa ronda
+      empezarRondaGranFinal(rondaGuardada);
+    }
+    return;
+  }
+
+  // Genuinamente nuevo (o reiniciado a propósito por el admin): registrar desde cero
+  try { await gfRegistrarEntrada(); } catch (err) { console.error('Error registrando entrada a la Gran Final:', err); }
 
   if (vaSolo) {
     empezarRondaGranFinal(1);
@@ -2816,12 +2857,14 @@ async function concluirPreguntaFinal(resultado) {
 
 function pintarBannerYRanking(resultado) {
   const eliminado = puntuacionMinijuego <= 0;
-  const bannerClass = resultado === true ? 'correct' : resultado === 'parcial' ? 'partial' : 'wrong';
-  const bannerText = resultado === true
-    ? '✅ ¡Correcto!'
-    : resultado === 'parcial'
-      ? `⚠️ Casi... acertaste solo la mitad · -${Math.round(FINAL_PENALTY / 2)} pts`
-      : `❌ Fallaste · -${FINAL_PENALTY} pts`;
+  const bannerClass = resultado === null ? 'partial' : resultado === true ? 'correct' : resultado === 'parcial' ? 'partial' : 'wrong';
+  const bannerText = resultado === null
+    ? '🔄 Reconectado, sigues donde lo dejaste'
+    : resultado === true
+      ? '✅ ¡Correcto!'
+      : resultado === 'parcial'
+        ? `⚠️ Casi... acertaste solo la mitad · -${Math.round(FINAL_PENALTY / 2)} pts`
+        : `❌ Fallaste · -${FINAL_PENALTY} pts`;
   const eliminadoAviso = eliminado
     ? `<div class="result-banner wrong" style="margin-top:10px">💀 Te has quedado a 0 puntos, no puedes seguir contestando</div>`
     : '';
@@ -3714,21 +3757,26 @@ async function renderCastigoModalContent(forzarRevelado = null, forzarCastigado 
   const soyElCastigado = forzarCastigado !== null ? forzarCastigado : (revelado && esElCastigado());
 
   if (soyElCastigado) {
-    if (papeles.length < 3) {
+    // Si escribiste tu propio papelito antes de saber que serías el
+    // castigado, se excluye del sorteo: no tiene sentido que te toque
+    // tu propia idea de reto
+    const papelesDisponibles = papeles.filter(p => p.player_name !== jugadorActual);
+
+    if (papelesDisponibles.length < 3) {
       cont.innerHTML = `
         <div class="castigo-modal-emoji">🔥😰</div>
         <div class="castigo-modal-title">Eres el castigado...</div>
-        <div class="castigo-modal-text">Hacen falta al menos 3 papelitos escritos para que puedas elegir. De momento hay ${papeles.length}.</div>
+        <div class="castigo-modal-text">Hacen falta al menos 3 papelitos escritos por otros para que puedas elegir. De momento hay ${papelesDisponibles.length}.</div>
         <button class="btn btn-primary" onclick="cerrarCastigoModal()">Vale</button>`;
     } else {
       castigadoSeleccion = new Set();
-      const numerosHtml = papeles.map(p => `
+      const numerosHtml = papelesDisponibles.map(p => `
         <button class="papelito-num" id="castigado-num-${p.numero}" onclick="toggleNumeroCastigado(${p.numero}, this)">${p.numero}</button>`).join('');
 
       cont.innerHTML = `
         <div class="castigo-modal-emoji">😈</div>
         <div class="castigo-modal-title">Eres el castigado</div>
-        <div class="castigo-modal-text" style="font-size:12px">Elige 3 números de los ${papeles.length} papelitos escritos, sin saber qué hay en cada uno.</div>
+        <div class="castigo-modal-text" style="font-size:12px">Elige 3 números de los ${papelesDisponibles.length} papelitos escritos por otros, sin saber qué hay en cada uno.</div>
         <div class="papelitos-grid">${numerosHtml}</div>
         <div id="castigado-contador" style="text-align:center;font-size:12px;color:var(--muted);margin:10px 0">0/3 elegidos</div>
         <button class="btn btn-primary" id="btn-confirmar-3" disabled onclick="confirmarTresElegidos()">Confirmar mis 3 números</button>`;
